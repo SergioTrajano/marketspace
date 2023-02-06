@@ -9,7 +9,9 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@expo-google-fonts/karla": "^0.2.2",
     "expo": "~47.0.12",
+    "expo-font": "~11.0.1",
     "expo-status-bar": "~1.4.2",
     "native-base": "^3.4.25",
     "react": "18.1.0",
