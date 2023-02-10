@@ -18,12 +18,14 @@ export const THEME = extendTheme({
             600: "#EDECEE",
             700: "#F7F7F8",
         },
+        white: "#FFFFFF",
     },
     fonts: {
         body: "Karla_400Regular",
         heading: "Karla_700Bold",
     },
     fontSizes: {
+        "2xs": 10,
         xs: 12,
         sm: 14,
         md: 16,
