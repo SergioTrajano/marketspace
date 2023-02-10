@@ -1,18 +1,17 @@
-import { ITextProps, Text } from "native-base";
+import { Heading, IHeadingProps } from "native-base";
 
-type Props = ITextProps & {
+type Props = IHeadingProps & {
     title: string;
 };
 
 export function Title({ title, ...rest }: Props) {
     return (
-        <Text
+        <Heading
             fontFamily="heading"
-            fontSize="xl"
             lineHeight="md"
-            color="gray.100"
+            {...rest}
         >
             {title}
-        </Text>
+        </Heading>
     );
 }
