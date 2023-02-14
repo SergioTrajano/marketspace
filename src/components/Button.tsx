@@ -5,10 +5,9 @@ type Props = IButtonProps & {
     text: string;
     buttonType: "PRIMARY" | "SECONDARY" | "TERCIARY";
     icon?: keyof typeof MaterialCommunityIcons.glyphMap;
-    width: string;
 };
 
-export function Button({ width, text, buttonType, icon, ...rest }: Props) {
+export function Button({ text, buttonType, icon, ...rest }: Props) {
     const backgroundColors = {
         PRIMARY: "gray.100",
         SECONDARY: "blue.500",
@@ -17,7 +16,6 @@ export function Button({ width, text, buttonType, icon, ...rest }: Props) {
 
     return (
         <NativeBaseButton
-            width={width}
             size="md"
             borderRadius="md"
             backgroundColor={backgroundColors[buttonType]}
