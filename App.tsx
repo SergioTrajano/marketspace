@@ -1,5 +1,6 @@
+import { StatusBar } from "react-native";
 import { useFonts, Karla_400Regular, Karla_700Bold } from "@expo-google-fonts/karla";
-import { Box, NativeBaseProvider, Text } from "native-base";
+import { NativeBaseProvider } from "native-base";
 
 import { THEME } from "./src/theme";
 
@@ -8,18 +9,11 @@ export default function App() {
 
     return (
         <NativeBaseProvider theme={THEME}>
-            <Box
-                marginTop={200}
-                marginLeft={100}
-                backgroundColor={"black"}
-            >
-                <Text
-                    color={"red.400"}
-                    lineHeight="md"
-                >
-                    Ola mundo
-                </Text>
-            </Box>
+            <StatusBar
+                translucent
+                backgroundColor="transparent"
+                barStyle="dark-content"
+            />
         </NativeBaseProvider>
     );
 }
