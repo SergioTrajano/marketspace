@@ -3,8 +3,11 @@ import {
     createNativeStackNavigator,
     NativeStackNavigationProp,
 } from "@react-navigation/native-stack";
-import { useTheme } from "native-base";
+import { Icon, useTheme } from "native-base";
 import { Platform } from "react-native";
+import { Ionicons, Octicons } from "@expo/vector-icons";
+
+import { useAuth } from "@hooks/userAuth";
 
 import { AdDetails } from "@screens/AdDetails";
 import { AdPreview } from "@screens/AdPreview";
@@ -13,10 +16,12 @@ import { EditAd } from "@screens/EditAd";
 import { Home } from "@screens/Home";
 import { MyAdDetails } from "@screens/MyAdDetails";
 import { MyAds } from "@screens/MyAds";
+import { useEffect } from "react";
 
 type TabRoutesProps = {
     Tabs: undefined;
     MyAds: undefined;
+    LogOut: undefined;
 };
 
 type StackRoutesProps = {
@@ -35,9 +40,9 @@ export function AppRoutes() {
     const Stack = createNativeStackNavigator<StackRoutesProps>();
     const Tab = createBottomTabNavigator<TabRoutesProps>();
 
-    const { sizes, colors } = useTheme();
+    const { LogOut } = useAuth();
 
-    const iconSize = sizes[6];
+    const { sizes, colors } = useTheme();
 
     function TabsRoutes() {
         return (
@@ -45,13 +50,13 @@ export function AppRoutes() {
                 screenOptions={{
                     headerShown: false,
                     tabBarShowLabel: false,
-                    tabBarActiveTintColor: colors.green[500],
-                    tabBarInactiveTintColor: colors.gray[200],
+                    tabBarActiveTintColor: colors.black,
+                    tabBarInactiveTintColor: colors.gray[400],
                     tabBarStyle: {
                         backgroundColor: colors.gray[600],
                         borderTopWidth: 0,
                         height: Platform.OS === "android" ? "auto" : 69,
-                        paddingBottom: sizes[10],
+                        paddingBottom: sizes[6],
                         paddingTop: sizes[6],
                     },
                 }}
@@ -59,11 +64,51 @@ export function AppRoutes() {
                 <Tab.Screen
                     name="Tabs"
                     component={Home}
+                    options={{
+                        tabBarIcon: ({ color }) => (
+                            <Icon
+                                as={Octicons}
+                                name="home"
+                                size={"xl"}
+                                color={color}
+                            />
+                        ),
+                    }}
                 />
 
                 <Tab.Screen
                     name="MyAds"
                     component={MyAds}
+                    options={{
+                        tabBarIcon: ({ color }) => (
+                            <Icon
+                                as={Octicons}
+                                name="tag"
+                                size={"xl"}
+                                color={color}
+                            />
+                        ),
+                    }}
+                />
+                <Tab.Screen
+                    name="LogOut"
+                    component={() => (
+                        <>
+                            {useEffect(() => {
+                                LogOut();
+                            }, [])}
+                        </>
+                    )}
+                    options={{
+                        tabBarIcon: () => (
+                            <Icon
+                                as={Ionicons}
+                                name="ios-exit-outline"
+                                color={"red.400"}
+                                size={"xl"}
+                            />
+                        ),
+                    }}
                 />
             </Tab.Navigator>
         );
