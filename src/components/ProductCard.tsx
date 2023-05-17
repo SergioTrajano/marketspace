@@ -31,7 +31,7 @@ export function ProductCard({
         <VStack>
             <Box position="relative">
                 <Image
-                    width={35}
+                    width={42}
                     height={25}
                     rounded="md"
                     opacity={imageOpacity}

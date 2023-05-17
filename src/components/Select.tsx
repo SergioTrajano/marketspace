@@ -3,14 +3,13 @@ import { useState } from "react";
 
 type Props = ISelectProps & {
     options: string[];
+    value: string;
 };
 
-export function Select({ options, ...rest }: Props) {
-    const [selected, setSelected] = useState<string>("Todos");
+export function Select({ options, value, ...rest }: Props) {
     return (
         <NativeBaseSelect
-            selectedValue={selected}
-            onValueChange={(itemValue) => setSelected(itemValue)}
+            selectedValue={value}
             minWidth={32}
             _selectedItem={{
                 endIcon: <CheckIcon size="5" />,
