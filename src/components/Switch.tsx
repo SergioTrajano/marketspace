@@ -11,6 +11,7 @@ export function Switch({ ...rest }: Props) {
     return (
         <NativeBaseSwitch
             size="lg"
+            alignSelf={"flex-start"}
             {...rest}
         />
     );

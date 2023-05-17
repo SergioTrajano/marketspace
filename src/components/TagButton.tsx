@@ -14,7 +14,15 @@ export function TagButton({ text, ...rest }: Props) {
     }
 
     const buttonBackgroundColor = isSelected ? "blue.500" : "gray.500";
-    const iconDisplay = isSelected ? "flex" : "none";
+    const icon = isSelected ? (
+        <Icon
+            as={MaterialCommunityIcons}
+            name="close-circle"
+            size={4}
+        />
+    ) : (
+        <></>
+    );
     const textColor = isSelected ? "white" : "gray.300";
 
     return (
@@ -23,16 +31,12 @@ export function TagButton({ text, ...rest }: Props) {
             backgroundColor={buttonBackgroundColor}
             borderLeftRadius="full"
             borderRightRadius="full"
-            paddingX={2}
-            paddingY={"2px"}
-            rightIcon={
-                <Icon
-                    as={MaterialCommunityIcons}
-                    name="close-circle"
-                    size={4}
-                    display={iconDisplay}
-                />
-            }
+            alignItems="center"
+            justifyContent={isSelected ? "space-between" : "center"}
+            rightIcon={icon}
+            width={20}
+            height={8}
+            py={0.5}
             {...rest}
         >
             <Text
