@@ -1,7 +1,7 @@
 import { IImageProps, Image as NativeBaseImage } from "native-base";
 
 type Props = IImageProps & {
-    width: "100%" | 25 | 35;
+    width: "100%" | 25 | 42;
     height: 25 | 70;
 };
 
