@@ -34,6 +34,7 @@ export function Button({ text, buttonType, icon, ...rest }: Props) {
                 fontFamily="heading"
                 fontSize="sm"
                 lineHeight="md"
+                fontWeight="bold"
                 color={buttonType === "TERCIARY" ? "gray.200" : "gray.700"}
             >
                 {text}
