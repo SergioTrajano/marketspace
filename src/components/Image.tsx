@@ -1,17 +1,18 @@
 import { IImageProps, Image as NativeBaseImage } from "native-base";
 
+import { closestSizeAcceptable } from "@utils/closestSizeAcceptableInNativeBase";
+
 type Props = IImageProps & {
-    width: "100%" | 25 | 42;
-    height: 25 | 70;
+    widthSize?: number;
+    heightSize?: number;
 };
 
-export function Image({ width, height, ...rest }: Props) {
+export function Image({ widthSize, heightSize, ...rest }: Props) {
     return (
         <NativeBaseImage
-            source={{ uri: "https://www.github.com/SergioTrajano.png" }}
             alt="Imagem do produto"
-            width={width}
-            height={height}
+            width={widthSize ? closestSizeAcceptable(widthSize) : "20"}
+            height={heightSize ? closestSizeAcceptable(heightSize) : "20"}
             resizeMode="cover"
             {...rest}
         />
