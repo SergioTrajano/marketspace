@@ -2,9 +2,10 @@ import { Center, Text, ICenterProps } from "native-base";
 
 type Props = ICenterProps & {
     text: "NOVO" | "USADO";
+    tagType?: "PRIMARY" | "SECONDARY";
 };
 
-export function Tag({ text, ...rest }: Props) {
+export function Tag({ text, tagType = "PRIMARY", ...rest }: Props) {
     const backgroundColor = {
         NOVO: "blue.700",
         USADO: "gray.200",
@@ -12,7 +13,7 @@ export function Tag({ text, ...rest }: Props) {
 
     return (
         <Center
-            backgroundColor={backgroundColor[text]}
+            backgroundColor={tagType === "PRIMARY" ? backgroundColor[text] : "gray.500"}
             borderLeftRadius="full"
             borderRightRadius="full"
             paddingX={2}
@@ -23,7 +24,7 @@ export function Tag({ text, ...rest }: Props) {
                 fontSize="2xs"
                 fontFamily="heading"
                 lineHeight="md"
-                color="white"
+                color={tagType === "PRIMARY" ? "white" : "gray.200"}
             >
                 {text}
             </Text>
