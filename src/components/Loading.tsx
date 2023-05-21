@@ -4,9 +4,12 @@ export function Loading() {
     return (
         <Center
             flex={1}
-            bgColor="gray.700"
+            bgColor="gray.600"
         >
-            <Spinner color="blue.500" />
+            <Spinner
+                color="blue.700"
+                size={"lg"}
+            />
         </Center>
     );
 }
