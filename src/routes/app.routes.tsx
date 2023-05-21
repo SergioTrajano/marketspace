@@ -1,11 +1,11 @@
-import { createBottomTabNavigator, BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import { Ionicons, Octicons } from "@expo/vector-icons";
+import { BottomTabNavigationProp, createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import {
-    createNativeStackNavigator,
     NativeStackNavigationProp,
+    createNativeStackNavigator,
 } from "@react-navigation/native-stack";
 import { Icon, useTheme } from "native-base";
 import { Platform } from "react-native";
-import { Ionicons, Octicons } from "@expo/vector-icons";
 
 import { useAuth } from "@hooks/userAuth";
 
@@ -40,7 +40,7 @@ export function AppRoutes() {
     const Stack = createNativeStackNavigator<StackRoutesProps>();
     const Tab = createBottomTabNavigator<TabRoutesProps>();
 
-    const { LogOut } = useAuth();
+    const { signOut } = useAuth();
 
     const { sizes, colors } = useTheme();
 
@@ -95,7 +95,7 @@ export function AppRoutes() {
                     component={() => (
                         <>
                             {useEffect(() => {
-                                LogOut();
+                                signOut();
                             }, [])}
                         </>
                     )}
