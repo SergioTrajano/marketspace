@@ -13,6 +13,6 @@ export async function getPhoto() {
     }
 
     if (photoSelected.assets[0].uri) {
-        return photoSelected.assets[0].uri;
+        return photoSelected.assets[0];
     }
 }

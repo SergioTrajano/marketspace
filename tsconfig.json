@@ -8,12 +8,13 @@
             "@assets/*": ["./src/assets/*"],
             "@components/*": ["./src/components/*"],
             "@screens/*": ["./src/screens/*"],
-            "@storage/*": ["./src/storage/*"],
+            "@storages/*": ["./src/storages/*"],
             "@utils/*": ["./src/utils/*"],
             "@services/*": ["./src/services/*"],
             "@hooks/*": ["./src/hooks/*"],
             "@contexts/*": ["./src/contexts/*"],
-            "@routes/*": ["./src/routes/*"]
+            "@routes/*": ["./src/routes/*"],
+            "@schemas/*": ["./src/schemas/*"]
         }
     }
 }
