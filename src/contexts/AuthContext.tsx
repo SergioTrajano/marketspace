@@ -43,7 +43,20 @@ export function AuthContextProvider({ children }: ProviderReactNode) {
         }
     }
 
-    async function signOut() {}
+    async function signOut() {
+        setIsLoadingStorageData(true);
+
+        try {
+            await userStorage.remove();
+            await authTokenStorage.remove();
+
+            updateUserAndTokenStates({} as UserDTO, "");
+        } catch (error) {
+            throw error;
+        } finally {
+            setIsLoadingStorageData(false);
+        }
+    }
 
     async function loadUserData() {
         setIsLoadingStorageData(true);
@@ -53,8 +66,6 @@ export function AuthContextProvider({ children }: ProviderReactNode) {
             const storageAuthToken = await authTokenStorage.get();
 
             if (storageUser.id && storageAuthToken) {
-                console.log("To aqui");
-
                 updateUserAndTokenStates(storageUser, storageAuthToken);
                 defineApiHeadersAuthorization(storageAuthToken);
             }
