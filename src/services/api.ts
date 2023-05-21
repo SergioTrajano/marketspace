@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from "axios";
 
 import { API_URL } from "@env";
 
-import { storageToken } from "@storages/storageAuthToken";
+import { authTokenStorage } from "@storages/storageAuthToken";
 
 import { AppError } from "@utils/AppError";
 
@@ -56,7 +56,7 @@ api.registerInterceptTokenManager = ({ signOut, refreshedTokenUpdated }) => {
                     requestError.response.data?.message === "token.expired" ||
                     requestError.response.data?.message === "token.invalid"
                 ) {
-                    const currentToken = await storageToken.get();
+                    const currentToken = await authTokenStorage.get();
 
                     if (currentToken === null) {
                         signOut();
@@ -87,7 +87,7 @@ api.registerInterceptTokenManager = ({ signOut, refreshedTokenUpdated }) => {
                                 token: currentToken,
                             });
 
-                            await storageToken.save(data.token);
+                            await authTokenStorage.save(data.token);
 
                             api.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
                             originalRequest.headers["Authorization"] = `Bearer ${data.token}`;
