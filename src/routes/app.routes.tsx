@@ -1,17 +1,17 @@
-import { createBottomTabNavigator, BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import { Ionicons, Octicons } from "@expo/vector-icons";
+import { BottomTabNavigationProp, createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import {
-    createNativeStackNavigator,
     NativeStackNavigationProp,
+    createNativeStackNavigator,
 } from "@react-navigation/native-stack";
 import { Icon, useTheme } from "native-base";
 import { Platform } from "react-native";
-import { Ionicons, Octicons } from "@expo/vector-icons";
 
 import { useAuth } from "@hooks/userAuth";
 
 import { AdDetails } from "@screens/AdDetails";
 import { AdPreview } from "@screens/AdPreview";
-import { CreateAd } from "@screens/CreateAd";
+import { CreateAd, NewAdProps } from "@screens/CreateAd";
 import { EditAd } from "@screens/EditAd";
 import { Home } from "@screens/Home";
 import { MyAdDetails } from "@screens/MyAdDetails";
@@ -27,7 +27,7 @@ type TabRoutesProps = {
 type StackRoutesProps = {
     Home: undefined;
     AdDetails: undefined;
-    AdPreview: undefined;
+    AdPreview: NewAdProps;
     CreateAd: undefined;
     EditAd: undefined;
     MyAdDetails: undefined;
@@ -40,7 +40,7 @@ export function AppRoutes() {
     const Stack = createNativeStackNavigator<StackRoutesProps>();
     const Tab = createBottomTabNavigator<TabRoutesProps>();
 
-    const { LogOut } = useAuth();
+    const { signOut } = useAuth();
 
     const { sizes, colors } = useTheme();
 
@@ -95,7 +95,7 @@ export function AppRoutes() {
                     component={() => (
                         <>
                             {useEffect(() => {
-                                LogOut();
+                                signOut();
                             }, [])}
                         </>
                     )}

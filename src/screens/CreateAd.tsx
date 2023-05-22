@@ -1,24 +1,67 @@
 import { Button } from "@components/Button";
-import { CheckBox } from "@components/CheckBox";
 import { Image } from "@components/Image";
 import { Input } from "@components/Input";
 import { RadioGroup } from "@components/RadioGroup";
 import { Switch } from "@components/Switch";
 import { Title } from "@components/Title";
-import { Box, Center, HStack, Icon, Pressable, TextArea, VStack, ScrollView } from "native-base";
+import { Box, Center, HStack, Icon, Pressable, ScrollView, VStack } from "native-base";
 
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Feather, AntDesign } from "@expo/vector-icons";
 import { Text } from "@components/Text";
+import { AntDesign, Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { AppStackProps, AppTabProps } from "@routes/app.routes";
-import { useState } from "react";
 import { getPhoto } from "@utils/getPhoto";
+import { Dimensions } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { CheckBox } from "@components/CheckBox";
+import { TextArea } from "@components/TextArea";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { createAdSchema } from "@schemas/createAdSchema";
+import { closestSizeAcceptable } from "@utils/closestSizeAcceptableInNativeBase";
+import { Controller, useForm } from "react-hook-form";
+
+type ImagesInfoProps = {
+    uri: string;
+    type: string;
+    extension: string;
+};
+type payment_method = "pix" | "card" | "deposit" | "cash" | "boleto";
+
+export type NewAdProps = {
+    productImages: ImagesInfoProps[];
+    name: string;
+    description: string;
+    is_new: "Produto novo" | "Produto usado";
+    accept_trade: boolean;
+    payment_methods: payment_method[];
+    price: string;
+};
 
 export function CreateAd() {
-    const [images, setImages] = useState<string[]>([] as string[]);
     const { goBack, navigate: stackNavigate } = useNavigation<AppStackProps>();
     const { navigate: tabNavigate } = useNavigation<AppTabProps>();
+
+    const {
+        control,
+        handleSubmit,
+        formState: { errors },
+        setValue,
+        getValues,
+    } = useForm<NewAdProps>({
+        resolver: yupResolver(createAdSchema),
+        defaultValues: {
+            productImages: [],
+            name: "",
+            description: "",
+            is_new: "Produto novo",
+            accept_trade: false,
+            payment_methods: [],
+            price: "",
+        },
+    });
+    console.log(errors);
+    const imageWidth = (Dimensions.get("window").width / 3 - 20) / 4;
 
     function handleGoBack() {
         goBack();
@@ -28,40 +71,47 @@ export function CreateAd() {
         tabNavigate("MyAds");
     }
 
-    function handleFoward() {
-        stackNavigate("AdPreview");
+    function handleFoward(newAd: NewAdProps) {
+        console.log("ola");
+        stackNavigate("AdPreview", newAd);
     }
 
     async function selectImage() {
         const selectPhoto = await getPhoto();
 
         if (selectPhoto) {
-            setImages((prev) => [...prev, selectPhoto]);
+            const newImage: ImagesInfoProps = {
+                uri: selectPhoto.uri,
+                type: String(selectPhoto.type),
+                extension: String(selectPhoto.uri.split(".").pop()),
+            };
+
+            const images = getValues("productImages");
+
+            setValue("productImages", [...images, newImage], { shouldValidate: true });
         }
     }
 
-    function deleteImage(deletedImage: string) {
-        setImages(images.filter((img) => img !== deletedImage));
-    }
-
     function renderImages() {
+        const images = getValues("productImages");
+
         return images.map((image) => (
             <Box
                 position="relative"
-                key={image}
+                key={image.uri}
             >
                 <Image
-                    width={25}
-                    height={25}
+                    widthSize={imageWidth}
+                    heightSize={imageWidth}
                     alt="ProductImage"
-                    source={{ uri: image }}
+                    source={{ uri: image.uri }}
                     borderRadius="lg"
                 />
                 <Pressable
                     position="absolute"
                     right={1}
                     top={1}
-                    onPress={() => deleteImage(image)}
+                    onPress={() => deleteImage(image.uri)}
                 >
                     <Icon
                         as={AntDesign}
@@ -76,9 +126,22 @@ export function CreateAd() {
         ));
     }
 
+    function deleteImage(deletedImageUri: string) {
+        const images = getValues("productImages");
+
+        setValue(
+            "productImages",
+            images.filter((img) => img.uri !== deletedImageUri),
+            { shouldValidate: true }
+        );
+    }
+
     return (
         <SafeAreaView>
-            <ScrollView width="100%">
+            <ScrollView
+                width="100%"
+                showsVerticalScrollIndicator={false}
+            >
                 <VStack
                     width="100%"
                     px={6}
@@ -123,29 +186,69 @@ export function CreateAd() {
                             marginBottom={6}
                         />
 
-                        <HStack space={6}>
+                        <HStack
+                            space={2}
+                            width="100%"
+                        >
                             {renderImages()}
 
-                            <Pressable
-                                width={25}
-                                height={25}
-                                justifyContent="center"
-                                alignItems="center"
-                                backgroundColor="gray.500"
-                                borderRadius="md"
-                                display={images.length < 3 ? "flex" : "none"}
-                                onPress={selectImage}
-                            >
-                                <Icon
-                                    as={Feather}
-                                    name="plus"
-                                    color="gray.400"
-                                />
-                            </Pressable>
+                            <Controller
+                                control={control}
+                                name="productImages"
+                                render={() => (
+                                    <Box
+                                        position="relative"
+                                        width="100%"
+                                    >
+                                        <Pressable
+                                            width={closestSizeAcceptable(imageWidth)}
+                                            height={closestSizeAcceptable(imageWidth)}
+                                            justifyContent="center"
+                                            alignItems="center"
+                                            backgroundColor="gray.500"
+                                            borderRadius="md"
+                                            display={
+                                                getValues("productImages").length < 3
+                                                    ? "flex"
+                                                    : "none"
+                                            }
+                                            onPress={selectImage}
+                                        >
+                                            <Icon
+                                                as={Feather}
+                                                name="plus"
+                                                color="gray.400"
+                                            />
+                                        </Pressable>
+
+                                        <HStack
+                                            width={40}
+                                            display={errors.productImages ? "flex" : "none"}
+                                            position="absolute"
+                                            right={10}
+                                            bottom="1/3"
+                                            alignItems="center"
+                                        >
+                                            <Icon
+                                                as={AntDesign}
+                                                name="exclamationcircleo"
+                                                color="red.500"
+                                            />
+
+                                            <Text
+                                                text={errors.productImages?.message || ""}
+                                                color="red.500"
+                                                marginLeft={2}
+                                                textAlign="left"
+                                            />
+                                        </HStack>
+                                    </Box>
+                                )}
+                            />
                         </HStack>
                     </VStack>
 
-                    <VStack marginBottom={8}>
+                    <VStack marginBottom={4}>
                         <Title
                             title="Sobre o produto"
                             fontSize="md"
@@ -153,39 +256,79 @@ export function CreateAd() {
                             marginBottom={4}
                         />
 
-                        <Input
-                            placeholder="Título do anúncio"
-                            fontSize="md"
-                            marginBottom={4}
+                        <Controller
+                            control={control}
+                            name="name"
+                            render={({ field: { value, onChange } }) => (
+                                <Input
+                                    placeholder="Título do anúncio"
+                                    onChangeText={onChange}
+                                    value={value}
+                                    fontSize="md"
+                                    errorMessage={errors.name?.message}
+                                />
+                            )}
                         />
 
-                        <TextArea
-                            h={40}
-                            placeholder="Descrição do produto"
-                            autoCompleteType={true}
-                            backgroundColor="gray.700"
-                            borderRadius="lg"
-                            fontSize="md"
-                            marginBottom={4}
+                        <Controller
+                            control={control}
+                            name="description"
+                            render={({ field: { onChange, value } }) => (
+                                <TextArea
+                                    placeholder="Descrição do produto"
+                                    marginBottom={6}
+                                    onChangeText={onChange}
+                                    value={value}
+                                    errorMessage={errors.description?.message}
+                                    isInvalid={!!errors.description?.message}
+                                />
+                            )}
                         />
 
-                        <RadioGroup
-                            name="ProductType"
-                            options={["Produto novo", "Produto usado"]}
+                        <Controller
+                            control={control}
+                            name="is_new"
+                            render={({ field: { onChange, value } }) => (
+                                <RadioGroup
+                                    name="isNew"
+                                    options={["Produto novo", "Produto usado"]}
+                                    onChange={onChange}
+                                    value={value}
+                                />
+                            )}
                         />
                     </VStack>
 
-                    <Box marginBottom={4}>
+                    <Box marginBottom={2}>
                         <Title
                             title="Venda"
                             color="gray.200"
                             fontSize="md"
-                            marginBottom={4}
+                            marginBottom={2}
                         />
 
-                        <Input
-                            placeholder="Valor do produto"
-                            inputType="CURRENCY"
+                        <Controller
+                            control={control}
+                            name="price"
+                            render={({ field: { value, onChange } }) => (
+                                <Input
+                                    placeholder="Valor do produto"
+                                    inputType="CURRENCY"
+                                    keyboardType="numeric"
+                                    onChangeText={(text: any) => {
+                                        if (isNaN(text)) {
+                                            return;
+                                        }
+                                        if (Number(text) < 0) {
+                                            return;
+                                        }
+
+                                        return onChange(text);
+                                    }}
+                                    value={value}
+                                    errorMessage={errors.price?.message}
+                                />
+                            )}
                         />
                     </Box>
 
@@ -196,7 +339,16 @@ export function CreateAd() {
                             fontSize="sm"
                         />
 
-                        <Switch />
+                        <Controller
+                            control={control}
+                            name="accept_trade"
+                            render={({ field: { onChange, value } }) => (
+                                <Switch
+                                    onChange={onChange}
+                                    value={value}
+                                />
+                            )}
+                        />
                     </Box>
 
                     <VStack space={3}>
@@ -206,26 +358,23 @@ export function CreateAd() {
                             fontSize="sm"
                         />
 
-                        <CheckBox
-                            label="Boleto"
-                            value="Boleto"
-                        />
-                        <CheckBox
-                            label="Pix"
-                            value="Pix"
-                        />
-                        <CheckBox
-                            label="Dinheiro"
-                            value="Dinheiro"
-                        />
-                        <CheckBox
-                            label="Cartão de Crédito"
-                            value="Cartão de Crédito"
-                        />
-                        <CheckBox
-                            label="Depósito Bancário"
-                            value="Depósito Bancário"
-                            onChange={() => console.log("oi")}
+                        <Controller
+                            control={control}
+                            name="payment_methods"
+                            render={({ field: { onChange, value } }) => (
+                                <CheckBox
+                                    options={[
+                                        { label: "Boleto", value: "boleto" },
+                                        { label: "Pix", value: "pix" },
+                                        { label: "Dinheiro", value: "cash" },
+                                        { label: "Cartão de Crédito", value: "card" },
+                                        { label: "Depósito Bancário", value: "deposit" },
+                                    ]}
+                                    value={value}
+                                    onChange={onChange}
+                                    errorMessage={errors.payment_methods?.message}
+                                />
+                            )}
                         />
                     </VStack>
                 </VStack>
@@ -246,7 +395,7 @@ export function CreateAd() {
                         text="Avançar"
                         buttonType="PRIMARY"
                         flex={1}
-                        onPress={handleFoward}
+                        onPress={handleSubmit(handleFoward)}
                     />
                 </HStack>
             </ScrollView>

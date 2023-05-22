@@ -1,14 +1,12 @@
-import { Radio as NativeBaseRadio, IRadioGroupProps, HStack } from "native-base";
+import { HStack, IRadioGroupProps, Radio as NativeBaseRadio } from "native-base";
 
 type Props = IRadioGroupProps & {
-    name: string;
     options: string[];
 };
 
-export function RadioGroup({ name, options, ...rest }: Props) {
+export function RadioGroup({ options, ...rest }: Props) {
     return (
         <NativeBaseRadio.Group
-            name={name}
             fontFamily="body"
             fontSize="md"
             {...rest}
