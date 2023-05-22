@@ -1,4 +1,4 @@
-import { Feather } from "@expo/vector-icons";
+import { AntDesign, Feather } from "@expo/vector-icons";
 import {
     FormControl,
     IInputProps,
@@ -18,15 +18,16 @@ export function Input({ inputType = "DEFAULT", errorMessage = "", ...rest }: Pro
     const [hide, setHide] = useState<boolean>(true);
 
     return (
-        <FormControl marginBottom={0}>
-            <FormControl.HelperText _text={{ color: "red.500" }}>
-                {errorMessage}
-            </FormControl.HelperText>
-
+        <FormControl
+            isInvalid={!!errorMessage}
+            position="relative"
+        >
             <NativeBaseInput
                 type={inputType === "PASSWORD" && hide ? "password" : "text"}
                 size="md"
                 borderRadius={"lg"}
+                marginBottom={6}
+                marginTop={2}
                 backgroundColor={"gray.700"}
                 fontSize={"md"}
                 fontFamily="body"
@@ -69,6 +70,22 @@ export function Input({ inputType = "DEFAULT", errorMessage = "", ...rest }: Pro
                 }
                 {...rest}
             />
+
+            <FormControl.ErrorMessage
+                _text={{ color: "red.500" }}
+                position="absolute"
+                bottom={0}
+                left={0}
+                leftIcon={
+                    <Icon
+                        as={AntDesign}
+                        name="exclamationcircleo"
+                        color="red.500"
+                    />
+                }
+            >
+                {errorMessage}
+            </FormControl.ErrorMessage>
         </FormControl>
     );
 }
