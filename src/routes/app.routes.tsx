@@ -11,7 +11,7 @@ import { useAuth } from "@hooks/userAuth";
 
 import { AdDetails } from "@screens/AdDetails";
 import { AdPreview } from "@screens/AdPreview";
-import { CreateAd } from "@screens/CreateAd";
+import { CreateAd, NewAdProps } from "@screens/CreateAd";
 import { EditAd } from "@screens/EditAd";
 import { Home } from "@screens/Home";
 import { MyAdDetails } from "@screens/MyAdDetails";
@@ -27,7 +27,7 @@ type TabRoutesProps = {
 type StackRoutesProps = {
     Home: undefined;
     AdDetails: undefined;
-    AdPreview: undefined;
+    AdPreview: NewAdProps;
     CreateAd: undefined;
     EditAd: undefined;
     MyAdDetails: undefined;
