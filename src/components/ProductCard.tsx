@@ -1,4 +1,5 @@
-import { VStack, Box } from "native-base";
+import { api } from "@services/api";
+import { Box, VStack } from "native-base";
 import { Avatar } from "./Avatar";
 import { Image } from "./Image";
 import { PriceText } from "./PriceText";
@@ -12,6 +13,8 @@ type Props = {
     price: string;
     productName: string;
     renderAvatar?: boolean;
+    avatarPath: string;
+    productImagePath: string;
 };
 
 export function ProductCard({
@@ -20,6 +23,8 @@ export function ProductCard({
     price,
     productName,
     renderAvatar = true,
+    avatarPath,
+    productImagePath,
 }: Props) {
     const priceColor = isActive ? "gray.100" : "gray.400";
     const textColor = isActive ? "gray.200" : "gray.400";
@@ -31,6 +36,7 @@ export function ProductCard({
         <VStack>
             <Box position="relative">
                 <Image
+                    source={{ uri: `${api.defaults.baseURL}/images/${productImagePath}` }}
                     width={42}
                     height={25}
                     rounded="md"
@@ -38,9 +44,10 @@ export function ProductCard({
                     backgroundColor="gray.100"
                 />
                 <Avatar
-                    size={6}
+                    source={{ uri: `${api.defaults.baseURL}/images/${avatarPath}` }}
+                    size={8}
                     borderColor="gray.700"
-                    borderWidth="1"
+                    borderWidth="1px"
                     position="absolute"
                     top={1}
                     left={1}
