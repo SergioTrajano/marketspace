@@ -6,14 +6,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Carousel from "react-native-reanimated-carousel";
 import { Image } from "./Image";
 
-type ImagesInfoProps = {
-    uri: string;
-    type: string;
-    extension: string;
-};
-
 type Props = {
-    images: ImagesInfoProps[];
+    images: string[];
 };
 
 export default function ImagesCarousel({ images }: Props) {
@@ -36,10 +30,10 @@ export default function ImagesCarousel({ images }: Props) {
                 data={images}
                 scrollAnimationDuration={1000}
                 onSnapToItem={(index) => setCurrentImageIndex(index)}
-                renderItem={({ item }) => (
+                renderItem={({ item, index }) => (
                     <Image
-                        key={item.uri}
-                        source={{ uri: item.uri }}
+                        key={item + index}
+                        source={{ uri: item }}
                         width={imageWidth}
                         height={imageWidth * 0.75}
                     />
@@ -56,7 +50,7 @@ export default function ImagesCarousel({ images }: Props) {
                     images.map((img, index) => {
                         return (
                             <Box
-                                key={img.uri}
+                                key={img + index}
                                 style={{
                                     borderRadius: 1000,
                                     width: (imageWidth - 4 * images.length) / images.length,
