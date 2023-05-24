@@ -29,7 +29,9 @@ type StackRoutesProps = {
     AdDetails: undefined;
     AdPreview: NewAdProps;
     CreateAd: undefined;
-    EditAd: undefined;
+    EditAd: {
+        productId: string;
+    };
     MyAdDetails: {
         productId: string;
     };
