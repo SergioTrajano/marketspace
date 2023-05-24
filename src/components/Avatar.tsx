@@ -1,8 +1,8 @@
 import { IAvatarProps, Avatar as NativeBaseAvatar } from "native-base";
 
 type Props = IAvatarProps & {
-    size: 6 | 11 | 22;
-    borderWidth: "1" | "2" | "3";
+    size: 8 | 11 | 22;
+    borderWidth: "1px" | "2px" | "3px";
     borderColor: "gray.700" | "blue.500";
 };
 
