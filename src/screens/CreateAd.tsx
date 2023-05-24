@@ -60,7 +60,7 @@ export function CreateAd() {
             price: "",
         },
     });
-    console.log(errors);
+
     const imageWidth = (Dimensions.get("window").width / 3 - 20) / 4;
 
     function handleGoBack() {
@@ -72,7 +72,6 @@ export function CreateAd() {
     }
 
     function handleFoward(newAd: NewAdProps) {
-        console.log("ola");
         stackNavigate("AdPreview", newAd);
     }
 
@@ -344,8 +343,9 @@ export function CreateAd() {
                             name="accept_trade"
                             render={({ field: { onChange, value } }) => (
                                 <Switch
-                                    onChange={onChange}
+                                    onToggle={onChange}
                                     value={value}
+                                    isChecked={value}
                                 />
                             )}
                         />

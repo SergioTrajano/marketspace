@@ -3,30 +3,136 @@ import { Title } from "@components/Title";
 import { Box, HStack, Icon, ScrollView, VStack } from "native-base";
 
 import { Avatar } from "@components/Avatar";
-import { Tag } from "@components/Tag";
 import { Button } from "@components/Button";
-import { useNavigation } from "@react-navigation/native";
+import { Tag } from "@components/Tag";
+import { MaterialCommunityIcons, MaterialIcons, Octicons } from "@expo/vector-icons";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { AppStackProps } from "@routes/app.routes";
-import { Octicons, MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 
 import ImagesCarousel from "@components/ImagesCarousel";
+import { useAuth } from "@hooks/userAuth";
+import { api } from "@services/api";
+import { NewAdProps } from "./CreateAd";
 
 export function AdPreview() {
-    const images = [
-        "http://github.com/SergioTrajano.png",
-        "http://github.com/SergioTrajano.png",
-        "http://github.com/SergioTrajano.png",
-    ];
-
     const { goBack, navigate } = useNavigation<AppStackProps>();
+    const route = useRoute();
+
+    const newAd = route.params as NewAdProps;
+    const { user } = useAuth();
 
     function handleGoBack() {
         goBack();
     }
+    async function handlePublish() {
+        try {
+            const productRequestBody = {
+                name: newAd.name,
+                description: newAd.description,
+                is_new: newAd.is_new === "Produto novo" ? true : false,
+                price: Math.floor(Number(newAd.price) * 100),
+                accept_trade: newAd.accept_trade,
+                payment_methods: newAd.payment_methods,
+            };
 
-    function handlePublish() {
-        navigate("MyAdDetails");
+            const { data } = await api.post("/products", productRequestBody);
+            const productimagesRequestBody = new FormData();
+
+            productimagesRequestBody.append("product_id", data.id);
+            newAd.productImages.forEach((imageData) => {
+                const photoFile = {
+                    name: `${user.name}.${imageData.extension}`.toLowerCase(),
+                    uri: imageData.uri,
+                    type: `${imageData.type}/${imageData.extension}`,
+                } as any;
+
+                productimagesRequestBody.append("images", photoFile);
+            });
+
+            await api.post("/products/images", productimagesRequestBody, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            });
+
+            navigate("MyAdDetails", { productId: data.id });
+        } catch (e) {
+            console.log(e);
+        }
     }
+
+    const paymentMethodsComponents = {
+        card: (
+            <>
+                <Icon
+                    as={Octicons}
+                    name="credit-card"
+                    size="md"
+                />
+                <Text
+                    text="Cartão de Crédito"
+                    color="gray.200"
+                    marginLeft={2}
+                />
+            </>
+        ),
+        pix: (
+            <>
+                <Icon
+                    as={MaterialIcons}
+                    name="qr-code"
+                    size="md"
+                />
+                <Text
+                    text="Pix"
+                    color="gray.200"
+                    marginLeft={2}
+                />
+            </>
+        ),
+        boleto: (
+            <>
+                <Icon
+                    as={MaterialCommunityIcons}
+                    name="barcode-scan"
+                    size="md"
+                />
+                <Text
+                    text="Boleto"
+                    color="gray.200"
+                    marginLeft={2}
+                />
+            </>
+        ),
+        cash: (
+            <>
+                <Icon
+                    as={MaterialIcons}
+                    name="attach-money"
+                    size="md"
+                />
+                <Text
+                    text="Dinheiro"
+                    color="gray.200"
+                    marginLeft={2}
+                />
+            </>
+        ),
+        deposit: (
+            <>
+                <Icon
+                    as={MaterialCommunityIcons}
+                    name="bank-outline"
+                    size="md"
+                />
+                <Text
+                    text="Depósito bancário"
+                    color="gray.200"
+                    marginLeft={2}
+                />
+            </>
+        ),
+    };
 
     return (
         <Box
@@ -62,7 +168,7 @@ export function AdPreview() {
                 showsVerticalScrollIndicator={false}
                 backgroundColor="gray.600"
             >
-                <ImagesCarousel images={images} />
+                <ImagesCarousel images={newAd.productImages} />
 
                 <VStack
                     px={6}
@@ -70,19 +176,20 @@ export function AdPreview() {
                 >
                     <HStack alignItems="center">
                         <Avatar
+                            source={{ uri: `${api.defaults.baseURL}/images/${user.avatar}` }}
                             size={6}
                             borderWidth={"2"}
                             borderColor={"blue.500"}
                         />
 
                         <Text
-                            text="Sergio Trajano"
+                            text={user.name}
                             marginLeft={2}
                         />
                     </HStack>
 
                     <Tag
-                        text="USADO"
+                        text={newAd.is_new === "Produto novo" ? "NOVO" : "USADO"}
                         maxWidth={16}
                         tagType="SECONDARY"
                         marginTop={6}
@@ -94,7 +201,7 @@ export function AdPreview() {
                             justifyContent="space-between"
                         >
                             <Title
-                                title="Luminária pendente"
+                                title={newAd.name}
                                 fontSize="xl"
                             />
 
@@ -106,7 +213,7 @@ export function AdPreview() {
                                     marginRight={1}
                                 />
                                 <Text
-                                    text="45,00"
+                                    text={newAd.price}
                                     fontSize="xl"
                                     fontWeight="bold"
                                     color="blue.500"
@@ -115,7 +222,7 @@ export function AdPreview() {
                         </HStack>
 
                         <Text
-                            text="Cras congue cursus in tortor sagittis placerat nunc, tellus arcu. Vitae ante leo eget maecenas urna mattis cursus. "
+                            text={newAd.description}
                             color="gray.200"
                             marginTop={2}
                         />
@@ -128,7 +235,7 @@ export function AdPreview() {
                                 marginRight={2}
                             />
                             <Text
-                                text="Não"
+                                text={newAd.accept_trade ? "Sim" : "Não"}
                                 color="gray.200"
                             />
                         </HStack>
@@ -143,86 +250,16 @@ export function AdPreview() {
                                 color="gray.200"
                             />
 
-                            <HStack
-                                alignContent="center"
-                                marginTop={2}
-                                marginBottom={1}
-                            >
-                                <Icon
-                                    as={Octicons}
-                                    name="credit-card"
-                                    size="md"
-                                />
-                                <Text
-                                    text="Cartão de Crédito"
-                                    color="gray.200"
-                                    marginLeft={2}
-                                />
-                            </HStack>
-                            <HStack
-                                alignContent="center"
-                                marginTop={2}
-                                marginBottom={1}
-                            >
-                                <Icon
-                                    as={MaterialIcons}
-                                    name="qr-code"
-                                    size="md"
-                                />
-                                <Text
-                                    text="Pix"
-                                    color="gray.200"
-                                    marginLeft={2}
-                                />
-                            </HStack>
-                            <HStack
-                                alignContent="center"
-                                marginTop={2}
-                                marginBottom={1}
-                            >
-                                <Icon
-                                    as={MaterialCommunityIcons}
-                                    name="barcode-scan"
-                                    size="md"
-                                />
-                                <Text
-                                    text="Boleto"
-                                    color="gray.200"
-                                    marginLeft={2}
-                                />
-                            </HStack>
-                            <HStack
-                                alignContent="center"
-                                marginTop={2}
-                                marginBottom={1}
-                            >
-                                <Icon
-                                    as={MaterialIcons}
-                                    name="attach-money"
-                                    size="md"
-                                />
-                                <Text
-                                    text="Dinheiro"
-                                    color="gray.200"
-                                    marginLeft={2}
-                                />
-                            </HStack>
-                            <HStack
-                                alignContent="center"
-                                marginTop={2}
-                                marginBottom={1}
-                            >
-                                <Icon
-                                    as={MaterialCommunityIcons}
-                                    name="bank-outline"
-                                    size="md"
-                                />
-                                <Text
-                                    text="Depósito bancário"
-                                    color="gray.200"
-                                    marginLeft={2}
-                                />
-                            </HStack>
+                            {newAd.payment_methods.map((method) => (
+                                <HStack
+                                    key={method}
+                                    alignContent="center"
+                                    marginTop={2}
+                                    marginBottom={1}
+                                >
+                                    {paymentMethodsComponents[method]}
+                                </HStack>
+                            ))}
                         </VStack>
                     </VStack>
                 </VStack>
