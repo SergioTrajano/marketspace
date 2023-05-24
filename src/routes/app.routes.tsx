@@ -30,7 +30,9 @@ type StackRoutesProps = {
     AdPreview: NewAdProps;
     CreateAd: undefined;
     EditAd: undefined;
-    MyAdDetails: undefined;
+    MyAdDetails: {
+        productId: string;
+    };
 };
 
 export type AppTabProps = BottomTabNavigationProp<TabRoutesProps>;
