@@ -1,4 +1,4 @@
-import { Avatar as NativeBaseAvatar, IAvatarProps } from "native-base";
+import { IAvatarProps, Avatar as NativeBaseAvatar } from "native-base";
 
 type Props = IAvatarProps & {
     size: 6 | 11 | 22;
@@ -9,7 +9,6 @@ type Props = IAvatarProps & {
 export function Avatar({ size, borderWidth, borderColor, ...rest }: Props) {
     return (
         <NativeBaseAvatar
-            source={{ uri: "https://www.github.com/SergioTrajano.png" }}
             borderWidth={borderWidth}
             borderColor={borderColor}
             size={size}
