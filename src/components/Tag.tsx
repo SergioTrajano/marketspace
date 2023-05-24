@@ -1,4 +1,4 @@
-import { Center, Text, ICenterProps } from "native-base";
+import { Center, ICenterProps, Text } from "native-base";
 
 type Props = ICenterProps & {
     text: "NOVO" | "USADO";
@@ -16,8 +16,9 @@ export function Tag({ text, tagType = "PRIMARY", ...rest }: Props) {
             backgroundColor={tagType === "PRIMARY" ? backgroundColor[text] : "gray.500"}
             borderLeftRadius="full"
             borderRightRadius="full"
+            height={4}
             paddingX={2}
-            paddingY={"2px"}
+            alignItems="center"
             {...rest}
         >
             <Text
