@@ -1,13 +1,19 @@
+import { Ionicons } from "@expo/vector-icons";
+import { Box, HStack, Icon, Pressable, useTheme } from "native-base";
+import { useRef, useState } from "react";
 import { Dimensions } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Carousel from "react-native-reanimated-carousel";
 import { Image } from "./Image";
-import { Box, HStack, Icon, Pressable, useTheme } from "native-base";
-import { useRef, useState } from "react";
-import { Ionicons } from "@expo/vector-icons";
+
+type ImagesInfoProps = {
+    uri: string;
+    type: string;
+    extension: string;
+};
 
 type Props = {
-    images: string[];
+    images: ImagesInfoProps[];
 };
 
 export default function ImagesCarousel({ images }: Props) {
@@ -22,7 +28,7 @@ export default function ImagesCarousel({ images }: Props) {
                 ref={(ref) => {
                     carouselRef = ref;
                 }}
-                loop={true}
+                loop={images.length > 1}
                 width={imageWidth}
                 height={imageWidth * 0.75}
                 autoPlay={true}
@@ -32,7 +38,8 @@ export default function ImagesCarousel({ images }: Props) {
                 onSnapToItem={(index) => setCurrentImageIndex(index)}
                 renderItem={({ item }) => (
                     <Image
-                        source={{ uri: item }}
+                        key={item.uri}
+                        source={{ uri: item.uri }}
                         width={imageWidth}
                         height={imageWidth * 0.75}
                     />
@@ -45,20 +52,23 @@ export default function ImagesCarousel({ images }: Props) {
                 left={0.5}
                 right={0.5}
             >
-                {images.map((img, index) => {
-                    return (
-                        <Box
-                            key={img + index}
-                            style={{
-                                borderRadius: 1000,
-                                width: (imageWidth - 4 * images.length) / images.length,
-                                height: 4,
-                                backgroundColor:
-                                    currentImageIndex === index ? colors.black : colors.gray[700],
-                            }}
-                        />
-                    );
-                })}
+                {images.length > 1 &&
+                    images.map((img, index) => {
+                        return (
+                            <Box
+                                key={img.uri}
+                                style={{
+                                    borderRadius: 1000,
+                                    width: (imageWidth - 4 * images.length) / images.length,
+                                    height: 4,
+                                    backgroundColor:
+                                        currentImageIndex === index
+                                            ? colors.black
+                                            : colors.gray[700],
+                                }}
+                            />
+                        );
+                    })}
             </HStack>
 
             <Pressable
@@ -66,6 +76,7 @@ export default function ImagesCarousel({ images }: Props) {
                 position="absolute"
                 left={2}
                 top="1/2"
+                display={images.length > 1 ? "flex" : "none"}
             >
                 <Icon
                     as={Ionicons}
@@ -81,6 +92,7 @@ export default function ImagesCarousel({ images }: Props) {
                 position="absolute"
                 right={2}
                 top="1/2"
+                display={images.length > 1 ? "flex" : "none"}
             >
                 <Icon
                     as={Ionicons}
