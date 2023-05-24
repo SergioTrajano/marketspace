@@ -13,7 +13,7 @@ export function Image({ widthSize, heightSize, ...rest }: Props) {
             alt="Imagem do produto"
             width={widthSize ? closestSizeAcceptable(widthSize) : "20"}
             height={heightSize ? closestSizeAcceptable(heightSize) : "20"}
-            resizeMode="cover"
+            resizeMode="contain"
             {...rest}
         />
     );

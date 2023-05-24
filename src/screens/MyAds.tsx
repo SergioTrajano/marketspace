@@ -1,83 +1,109 @@
-import { Center, FlatList, HStack, Icon, Pressable, VStack } from "native-base";
-import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { Center, FlatList, HStack, Icon, Pressable, VStack, useToast } from "native-base";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ProductCard } from "@components/ProductCard";
 import { Select } from "@components/Select";
 import { Title } from "@components/Title";
 
-import { AppStackProps } from "@routes/app.routes";
+import { Loading } from "@components/Loading";
 import { Text } from "@components/Text";
-import { useState } from "react";
+import { useAuth } from "@hooks/userAuth";
+import { AppStackProps } from "@routes/app.routes";
+import { api } from "@services/api";
+import { AppError } from "@utils/AppError";
+import { useCallback, useState } from "react";
+import { Payment_method } from "./CreateAd";
+
+type ProductProps = {
+    accept_trade: boolean;
+    created_at: string;
+    description: string;
+    id: string;
+    is_active: boolean;
+    is_new: boolean;
+    name: string;
+    payment_methods: { key: Payment_method; name: string }[];
+    price: number;
+    product_images: { id: string; path: string }[];
+    updated_at: string;
+    user_id: string;
+};
 
 export function MyAds() {
-    const products = [
-        {
-            avatar: "https://github.com/SergioTrajano.png",
-            tagText: "USADO",
-            price: 15,
-            productName: "Sapato",
-        },
-        {
-            avatar: "https://github.com/SergioTrajano.png",
-            tagText: "USADO",
-            price: 15,
-            productName: "Joia",
-        },
-        {
-            avatar: "https://github.com/SergioTrajano.png",
-            tagText: "NOVO",
-            price: 15,
-            productName: "Sapato",
-        },
-        {
-            avatar: "https://github.com/SergioTrajano.png",
-            tagText: "NOVO",
-            price: 15,
-            productName: "Brinco",
-        },
-        {
-            avatar: "https://github.com/SergioTrajano.png",
-            tagText: "USADO",
-            price: 15,
-            productName: "Calça",
-        },
-        {
-            avatar: "https://github.com/SergioTrajano.png",
-            tagText: "NOVO",
-            price: 15,
-            productName: "Camisa",
-        },
-        {
-            avatar: "https://github.com/SergioTrajano.png",
-            tagText: "NOVO",
-            price: 15,
-            productName: "Camisa",
-        },
-    ];
-    const [selectedValue, setSelectedValue] = useState<string>("Todos");
+    const [userProducts, setUserProducs] = useState<ProductProps[]>([] as ProductProps[]);
+    const [selectedFilter, setSelectedFilter] = useState<string>("Todos");
+    const [isLoading, setIsLoading] = useState<boolean>(true);
 
+    const { user } = useAuth();
     const { navigate } = useNavigation<AppStackProps>();
+    const toast = useToast();
 
     function handleNewAd() {
         navigate("CreateAd");
     }
 
-    function handleMyAdDetails() {
-        navigate("MyAdDetails");
+    function handleMyAdDetails(id: string) {
+        navigate("MyAdDetails", { productId: id });
     }
 
-    function renderProductCard(item: any) {
+    function renderProductCard(product: ProductProps) {
         return (
-            <Pressable onPress={handleMyAdDetails}>
+            <Pressable onPress={() => handleMyAdDetails(product.id)}>
                 <ProductCard
-                    price={item.price}
-                    productName={item.productName}
-                    tagText={item.tagText}
+                    price={(product.price / 100).toFixed(2).replace(".", ",")}
+                    productName={product.name}
+                    tagText={product.is_new ? "NOVO" : "USADO"}
+                    avatarPath={user.avatar}
+                    productImagePath={product.product_images[0].path}
+                    isActive={product.is_active}
                 />
             </Pressable>
         );
+    }
+
+    function filterUserproducts() {
+        const filteredProducts = userProducts.filter((product) => {
+            if (selectedFilter === "Ativos") {
+                return product.is_active === true;
+            }
+            if (selectedFilter === "Inativos") {
+                return product.is_active === false;
+            }
+
+            return true;
+        });
+
+        return filteredProducts;
+    }
+
+    useFocusEffect(
+        useCallback(() => {
+            loadUserProducts();
+        }, [])
+    );
+
+    async function loadUserProducts() {
+        try {
+            const { data } = await api.get("users/products");
+
+            setUserProducs(data);
+            setIsLoading(false);
+        } catch (error) {
+            const isAppError = error instanceof AppError;
+            console.log(error);
+
+            const title = isAppError
+                ? error.message
+                : "Não foi possível carregar seus anúncios. Tente novamente!";
+
+            toast.show({ title, backgroundColor: "red.500", placement: "top" });
+        }
+    }
+
+    if (isLoading) {
+        return <Loading />;
     }
 
     return (
@@ -87,6 +113,7 @@ export function MyAds() {
                 px={6}
                 py={16}
                 backgroundColor={"gray.600"}
+                minHeight="100%"
             >
                 <Center
                     marginBottom={8}
@@ -102,13 +129,15 @@ export function MyAds() {
                         onPress={handleNewAd}
                         position="absolute"
                         right={0}
-                        top={1.5}
+                        bottom={"0.5"}
+                        alignItems="center"
+                        justifyContent="center"
                     >
                         <Icon
                             as={Feather}
                             name="plus"
                             color="gray.100"
-                            size="lg"
+                            size="xl"
                         />
                     </Pressable>
                 </Center>
@@ -120,26 +149,40 @@ export function MyAds() {
                     marginBottom={7}
                 >
                     <Text
-                        text="5 anúncios"
+                        text={
+                            userProducts.length <= 1
+                                ? `${userProducts.length} anúncio`
+                                : `${userProducts.length} anúncios`
+                        }
                         fontSize="sm"
                         color="gray.200"
                     />
 
                     <Select
                         options={["Todos", "Ativos", "Inativos"]}
-                        value={selectedValue}
-                        onValueChange={(newValue) => setSelectedValue(newValue)}
+                        value={selectedFilter}
+                        onValueChange={(newValue) => setSelectedFilter(newValue)}
                     />
                 </HStack>
 
                 <FlatList
-                    data={products}
+                    data={filterUserproducts()}
                     renderItem={({ item }) => renderProductCard(item)}
-                    keyExtractor={(item: any, i: number) => `${item.productName} ${i}`}
+                    keyExtractor={(item: ProductProps) => item.id}
                     numColumns={2}
                     showsVerticalScrollIndicator={false}
                     columnWrapperStyle={{ justifyContent: "space-between", marginBottom: 34 }}
                     marginBottom={20}
+                    ListEmptyComponent={() => (
+                        <Center height={64}>
+                            <Text
+                                text="Você ainda não criou nenhum anúncio... Que tal criar o seu primeiro anúncio?"
+                                fontWeight="bold"
+                                textAlign="center"
+                                fontSize="lg"
+                            />
+                        </Center>
+                    )}
                 />
             </VStack>
         </SafeAreaProvider>
