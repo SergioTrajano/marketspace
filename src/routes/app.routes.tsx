@@ -26,7 +26,9 @@ type TabRoutesProps = {
 
 type StackRoutesProps = {
     Home: undefined;
-    AdDetails: undefined;
+    AdDetails: {
+        productId: string;
+    };
     AdPreview: NewAdProps;
     CreateAd: undefined;
     EditAd: {
