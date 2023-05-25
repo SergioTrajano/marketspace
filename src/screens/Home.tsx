@@ -1,77 +1,66 @@
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import {
+    Actionsheet,
     Box,
-    HStack,
-    Icon,
-    VStack,
-    Pressable,
+    Center,
     Divider,
     FlatList,
-    Actionsheet,
+    HStack,
+    Icon,
+    Pressable,
+    VStack,
     useDisclose,
-    Switch as NativeSwitch,
+    useToast,
 } from "native-base";
-import { Feather } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Avatar } from "@components/Avatar";
 import { Button } from "@components/Button";
-import { Text } from "@components/Text";
-import { Title } from "@components/Title";
 import { Input } from "@components/Input";
 import { ProductCard } from "@components/ProductCard";
+import { Text } from "@components/Text";
+import { Title } from "@components/Title";
 
-import { AppStackProps, AppTabProps } from "@routes/app.routes";
-import { Switch } from "@components/Switch";
-import { Select } from "@components/Select";
-import { TagButton } from "@components/TagButton";
 import { CheckBox } from "@components/CheckBox";
+import { Loading } from "@components/Loading";
+import { Switch } from "@components/Switch";
+import { TagButton } from "@components/TagButton";
+import { useAuth } from "@hooks/userAuth";
+import { AppStackProps, AppTabProps } from "@routes/app.routes";
+import { api } from "@services/api";
+import { AppError } from "@utils/AppError";
+import { useCallback, useEffect, useState } from "react";
+import { Payment_method } from "./CreateAd";
+
+type ProductProps = {
+    accept_trade: boolean;
+    id: string;
+    is_new: boolean;
+    name: string;
+    payment_methods: { key: Payment_method; name: string }[];
+    price: number;
+    product_images: { id: string; path: string }[];
+    user: { avatar: string; name: string; tel: string };
+};
 
 export function Home() {
-    const products = [
-        {
-            avatar: "https://github.com/SergioTrajano.png",
-            tagText: "USADO",
-            price: 15,
-            productName: "Sapato",
-        },
-        {
-            avatar: "https://github.com/SergioTrajano.png",
-            tagText: "USADO",
-            price: 15,
-            productName: "Joia",
-        },
-        {
-            avatar: "https://github.com/SergioTrajano.png",
-            tagText: "NOVO",
-            price: 15,
-            productName: "Sapato",
-        },
-        {
-            avatar: "https://github.com/SergioTrajano.png",
-            tagText: "NOVO",
-            price: 15,
-            productName: "Brinco",
-        },
-        {
-            avatar: "https://github.com/SergioTrajano.png",
-            tagText: "USADO",
-            price: 15,
-            productName: "Calça",
-        },
-        {
-            avatar: "https://github.com/SergioTrajano.png",
-            tagText: "NOVO",
-            price: 15,
-            productName: "Camisa",
-        },
-        {
-            avatar: "https://github.com/SergioTrajano.png",
-            tagText: "NOVO",
-            price: 15,
-            productName: "Camisa",
-        },
-    ];
+    const [products, setProducts] = useState<ProductProps[]>([] as ProductProps[]);
+    const [isLoadingProducts, setisLoadingProducts] = useState<boolean>(true);
+    const [userproductsQuantity, setUserproductsQuantity] = useState<string>("-");
+    const [conditionFilter, setConditionFilter] = useState<string | undefined>(undefined);
+    const [acceptTradeFilter, setAcceptTradeFilter] = useState<boolean | undefined>(undefined);
+    const [paymentMethodsFilter, setPaymentMethodsFilter] = useState<Payment_method[]>(
+        [] as Payment_method[]
+    );
+    const [nameFilter, setNameFilter] = useState<string>("");
+    const [productRequestQuery, setProductRequestQuery] = useState<string>("");
+
+    const { user } = useAuth();
+
+    const { isOpen, onClose, onOpen } = useDisclose();
+    const toast = useToast();
+
     const tabNavigation = useNavigation<AppTabProps>();
     const stackNavigation = useNavigation<AppStackProps>();
 
@@ -83,16 +72,109 @@ export function Home() {
         stackNavigation.navigate("CreateAd");
     }
 
-    function renderProductCard(item: any) {
+    function handleMyAdDetails(productId: string) {
+        stackNavigation.navigate("AdDetails", { productId });
+    }
+
+    async function resetFilters() {
+        setConditionFilter(() => undefined);
+        setAcceptTradeFilter(() => undefined);
+        setPaymentMethodsFilter(() => [] as Payment_method[]);
+
+        onClose();
+
+        setProductRequestQuery("");
+    }
+
+    async function applyFilters() {
+        let query = "";
+
+        if (conditionFilter) {
+            query += conditionFilter === "NOVO" ? "is_new=true&" : "is_new=false&";
+        }
+        if (acceptTradeFilter !== undefined) {
+            query += `accept_trade=${acceptTradeFilter}&`;
+        }
+        if (paymentMethodsFilter.length) {
+            query += `payment_methods=${JSON.stringify(paymentMethodsFilter)}&`;
+        }
+        if (nameFilter !== "") {
+            query += `query=${nameFilter}&`;
+        }
+
+        setProductRequestQuery(query.slice(0, -1));
+
+        onClose();
+    }
+
+    function renderProductCard(item: ProductProps) {
         return (
-            <ProductCard
-                price={item.price}
-                productName={item.productName}
-                tagText={item.tagText}
-            />
+            <Pressable onPress={() => handleMyAdDetails(item.id)}>
+                <ProductCard
+                    price={(item.price / 100).toFixed(2).replace(".", ",")}
+                    productName={item.name}
+                    tagText={item.is_new ? "NOVO" : "USADO"}
+                    avatarPath={item.user.avatar}
+                    productImagePath={item.product_images[0].path}
+                />
+            </Pressable>
         );
     }
-    const { isOpen, onClose, onOpen } = useDisclose();
+
+    function changeConditionFilter(condition: string) {
+        if (condition === conditionFilter) {
+            return setConditionFilter(undefined);
+        }
+
+        setConditionFilter(condition);
+    }
+
+    useFocusEffect(
+        useCallback(() => {
+            getUserProductsQuantity();
+            loadProducts();
+        }, [])
+    );
+
+    useEffect(() => {
+        loadProducts();
+    }, [productRequestQuery]);
+
+    async function getUserProductsQuantity() {
+        try {
+            const { data }: { data: ProductProps[] } = await api.get("/users/products");
+
+            setUserproductsQuantity(String(data.length));
+        } catch (error) {
+            const isAppError = error instanceof AppError;
+
+            const title = isAppError
+                ? error.message
+                : "Não foi possivel carregar os seus produtos. Tente novamente mais tarde!";
+
+            toast.show({ title, backgroundColor: "red.500", placement: "top" });
+        }
+    }
+
+    async function loadProducts() {
+        setisLoadingProducts(true);
+
+        try {
+            const { data } = await api.get(`/products?${productRequestQuery}`);
+
+            setProducts(data);
+        } catch (error) {
+            const isAppError = error instanceof AppError;
+
+            const title = isAppError
+                ? error.message
+                : "Não foi possivel carregar os produtos. Tente novamente mais tarde!";
+
+            toast.show({ title, backgroundColor: "red.500", placement: "top" });
+        } finally {
+            setisLoadingProducts(false);
+        }
+    }
 
     return (
         <SafeAreaView>
@@ -100,6 +182,7 @@ export function Home() {
                 py={6}
                 px={6}
                 height={"100%"}
+                backgroundColor="gray.600"
             >
                 <HStack
                     width={"100%"}
@@ -110,10 +193,10 @@ export function Home() {
                         flex={1}
                     >
                         <Avatar
-                            source={{ uri: "https://github.com/SergioTrajano.png" }}
+                            source={{ uri: `${api.defaults.baseURL}/images/${user.avatar}` }}
                             size={11}
                             borderColor={"blue.500"}
-                            borderWidth={"2"}
+                            borderWidth={"2px"}
                         />
 
                         <VStack marginLeft={2}>
@@ -122,7 +205,7 @@ export function Home() {
                                 color={"gray.100"}
                             />
                             <Text
-                                text="Sergio!"
+                                text={`${user.name.split(" ")[0]}!`}
                                 fontWeight={"bold"}
                                 color={"gray.100"}
                             />
@@ -171,7 +254,7 @@ export function Home() {
 
                                 <VStack marginLeft={4}>
                                     <Title
-                                        title="4"
+                                        title={userproductsQuantity}
                                         color="gray.200"
                                     />
 
@@ -213,9 +296,12 @@ export function Home() {
                     <Input
                         placeholder="Buscar anúncio"
                         px={4}
+                        value={nameFilter}
+                        onChangeText={setNameFilter}
+                        isDisabled={isLoadingProducts}
                         InputRightElement={
                             <HStack marginRight={4}>
-                                <Pressable onPress={() => console.log("Searching...")}>
+                                <Pressable onPress={applyFilters}>
                                     <Icon
                                         as={Feather}
                                         name="search"
@@ -281,8 +367,14 @@ export function Home() {
                                                 <TagButton
                                                     text="NOVO"
                                                     marginRight={2}
+                                                    isSelected={conditionFilter === "NOVO"}
+                                                    onPress={() => changeConditionFilter("NOVO")}
                                                 />
-                                                <TagButton text="USADO" />
+                                                <TagButton
+                                                    text="USADO"
+                                                    isSelected={conditionFilter === "USADO"}
+                                                    onPress={() => changeConditionFilter("USADO")}
+                                                />
                                             </HStack>
                                         </VStack>
 
@@ -294,7 +386,13 @@ export function Home() {
                                                 color="gray.200"
                                             />
 
-                                            <Switch alignSelf={"flex-start"} />
+                                            <Switch
+                                                alignSelf={"flex-start"}
+                                                onToggle={() =>
+                                                    setAcceptTradeFilter(!acceptTradeFilter)
+                                                }
+                                                value={acceptTradeFilter}
+                                            />
                                         </VStack>
 
                                         <VStack marginBottom={16}>
@@ -306,25 +404,18 @@ export function Home() {
                                             />
 
                                             <CheckBox
-                                                label="Boleto"
-                                                value="Boleto"
-                                            />
-                                            <CheckBox
-                                                label="Pix"
-                                                value="Pix"
-                                            />
-                                            <CheckBox
-                                                label="Dinheiro"
-                                                value="Dinheiro"
-                                            />
-                                            <CheckBox
-                                                label="Cartão de Crédito"
-                                                value="Cartão de Crédito"
-                                            />
-                                            <CheckBox
-                                                label="Depósito Bancário"
-                                                value="Depósito Bancário"
-                                                onChange={() => console.log("oi")}
+                                                options={[
+                                                    { label: "Boleto", value: "boleto" },
+                                                    { label: "Pix", value: "pix" },
+                                                    { label: "Dinheiro", value: "cash" },
+                                                    { label: "Cartão de Crédito", value: "card" },
+                                                    {
+                                                        label: "Depósito Bancário",
+                                                        value: "deposit",
+                                                    },
+                                                ]}
+                                                value={paymentMethodsFilter}
+                                                onChange={setPaymentMethodsFilter}
                                             />
                                         </VStack>
 
@@ -334,12 +425,14 @@ export function Home() {
                                             space={3}
                                         >
                                             <Button
+                                                onPress={resetFilters}
                                                 buttonType="TERCIARY"
                                                 text="Resetar Filtros"
                                                 flex={1}
                                             />
 
                                             <Button
+                                                onPress={applyFilters}
                                                 buttonType="PRIMARY"
                                                 text="Aplicar Filtros"
                                                 flex={1}
@@ -352,14 +445,30 @@ export function Home() {
                     />
                 </Box>
 
-                <FlatList
-                    data={products}
-                    renderItem={({ item }) => renderProductCard(item)}
-                    keyExtractor={(item: any, i: number) => `${item.productName} ${i}`}
-                    numColumns={2}
-                    showsVerticalScrollIndicator={false}
-                    columnWrapperStyle={{ justifyContent: "space-between", marginBottom: 34 }}
-                />
+                {isLoadingProducts ? (
+                    <Loading />
+                ) : (
+                    <FlatList
+                        data={products}
+                        renderItem={({ item }) => renderProductCard(item)}
+                        keyExtractor={(item: any, i: number) => `${item.productName} ${i}`}
+                        numColumns={2}
+                        showsVerticalScrollIndicator={false}
+                        columnWrapperStyle={{ justifyContent: "space-between", marginBottom: 34 }}
+                        ListEmptyComponent={() => (
+                            <Center
+                                height={64}
+                                background="gray.700"
+                                borderRadius="3xl"
+                            >
+                                <Title
+                                    title="Não há produtos para esta busca"
+                                    textAlign="center"
+                                />
+                            </Center>
+                        )}
+                    />
+                )}
             </VStack>
         </SafeAreaView>
     );
