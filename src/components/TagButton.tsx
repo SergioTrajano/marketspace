@@ -1,18 +1,12 @@
-import { useState } from "react";
-import { Button, Text, IButtonProps, Icon } from "native-base";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Button, IButtonProps, Icon, Text } from "native-base";
 
 type Props = IButtonProps & {
     text: "NOVO" | "USADO";
+    isSelected: boolean;
 };
 
-export function TagButton({ text, ...rest }: Props) {
-    const [isSelected, setIsSelected] = useState<boolean>(false);
-
-    function handlePress() {
-        setIsSelected((prevIsSelected) => !prevIsSelected);
-    }
-
+export function TagButton({ text, isSelected, ...rest }: Props) {
     const buttonBackgroundColor = isSelected ? "blue.500" : "gray.500";
     const icon = isSelected ? (
         <Icon
@@ -27,7 +21,6 @@ export function TagButton({ text, ...rest }: Props) {
 
     return (
         <Button
-            onPress={handlePress}
             backgroundColor={buttonBackgroundColor}
             borderLeftRadius="full"
             borderRightRadius="full"
