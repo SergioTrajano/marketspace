@@ -26,14 +26,17 @@ export function AuthContextProvider({ children }: ProviderReactNode) {
         try {
             const { data } = await api.post("sessions", { email, password });
 
-            if (data.user && data.token) {
+            if (data.user && data.token && data.refresh_token) {
                 setIsLoadingStorageData(true);
 
                 updateUserAndTokenStates(data.user, data.token);
 
                 defineApiHeadersAuthorization(data.token);
 
-                await authTokenStorage.save(data.token);
+                await authTokenStorage.save({
+                    token: data.token,
+                    refreshToken: data.refresh_token,
+                });
                 await userStorage.save(data.user);
             }
         } catch (error) {
@@ -41,6 +44,11 @@ export function AuthContextProvider({ children }: ProviderReactNode) {
         } finally {
             setIsLoadingStorageData(false);
         }
+    }
+
+    function updateUserAndTokenStates(user: UserDTO, token: string) {
+        setUser(user);
+        setToken(token);
     }
 
     async function signOut() {
@@ -66,8 +74,8 @@ export function AuthContextProvider({ children }: ProviderReactNode) {
             const storageAuthToken = await authTokenStorage.get();
 
             if (storageUser.id && storageAuthToken) {
-                updateUserAndTokenStates(storageUser, storageAuthToken);
-                defineApiHeadersAuthorization(storageAuthToken);
+                updateUserAndTokenStates(storageUser, storageAuthToken.token);
+                defineApiHeadersAuthorization(storageAuthToken.token);
             }
         } catch (error) {
             throw error;
@@ -77,17 +85,20 @@ export function AuthContextProvider({ children }: ProviderReactNode) {
     }
 
     function defineApiHeadersAuthorization(token: string) {
-        api.defaults.headers.common["Authorization"] = token;
-    }
-
-    function updateUserAndTokenStates(user: UserDTO, token: string) {
-        setUser(user);
-        setToken(token);
+        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     }
 
     useEffect(() => {
         loadUserData();
     }, []);
+
+    useEffect(() => {
+        const subscriber = api.registerInterceptTokenManager(signOut);
+
+        return () => {
+            subscriber();
+        };
+    }, [signOut]);
 
     return (
         <AuthContext.Provider value={{ user, token, signIn, signOut, isLoadingStorageData }}>
