@@ -1,69 +1,182 @@
+import { Button } from "@components/Button";
 import { Image } from "@components/Image";
-import { useNavigation } from "@react-navigation/native";
-import { AppStackProps, AppTabProps } from "@routes/app.routes";
-import { getPhoto } from "@utils/getPhoto";
-import { Box, Center, HStack, Icon, Pressable, ScrollView, TextArea, VStack } from "native-base";
-import { useState } from "react";
-import { Dimensions } from "react-native";
-import { AntDesign, Feather } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Title } from "@components/Title";
-import { Text } from "@components/Text";
-import { closestSizeAcceptable } from "@utils/closestSizeAcceptableInNativeBase";
 import { Input } from "@components/Input";
 import { RadioGroup } from "@components/RadioGroup";
 import { Switch } from "@components/Switch";
+import { Title } from "@components/Title";
+import { Box, Center, HStack, Icon, Pressable, ScrollView, VStack, useToast } from "native-base";
+
+import { Text } from "@components/Text";
+import { AntDesign, Feather } from "@expo/vector-icons";
+import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
+import { AppStackProps } from "@routes/app.routes";
+import { getPhoto } from "@utils/getPhoto";
+import { Dimensions } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
 import { CheckBox } from "@components/CheckBox";
-import { Button } from "@components/Button";
+import { Loading } from "@components/Loading";
+import { TextArea } from "@components/TextArea";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { useAuth } from "@hooks/userAuth";
+import { createAdSchema } from "@schemas/createAdSchema";
+import { api } from "@services/api";
+import { AppError } from "@utils/AppError";
+import { closestSizeAcceptable } from "@utils/closestSizeAcceptableInNativeBase";
+import { useCallback, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+
+type UploadedImagePros = {
+    uri: string;
+    type: string;
+    extension: string;
+    id?: string;
+};
+
+export type Payment_method = "pix" | "card" | "deposit" | "cash" | "boleto";
+
+export type ProductProps = {
+    productImages: UploadedImagePros[];
+    name: string;
+    description: string;
+    is_new: "Produto novo" | "Produto usado";
+    accept_trade: boolean;
+    payment_methods: Payment_method[];
+    price: string;
+};
 
 export function EditAd() {
-    const [images, setImages] = useState<string[]>([] as string[]);
-    const { goBack, navigate: stackNavigate } = useNavigation<AppStackProps>();
-    const { navigate: tabNavigate } = useNavigation<AppTabProps>();
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [isEditing, setIsEditing] = useState<boolean>(false);
+    const [imagesToDeleteIds, setImagesToDeleteIds] = useState<string[]>([] as string[]);
+
+    const route = useRoute();
+    const { productId } = route.params as { productId: string };
+
+    const { user } = useAuth();
+
+    const toast = useToast();
+
+    const { goBack, navigate } = useNavigation<AppStackProps>();
+
+    const {
+        control,
+        handleSubmit,
+        formState: { errors },
+        setValue,
+        getValues,
+    } = useForm<ProductProps>({
+        resolver: yupResolver(createAdSchema),
+        defaultValues: {
+            productImages: [],
+            name: "",
+            description: "",
+            is_new: "Produto novo",
+            accept_trade: false,
+            payment_methods: [],
+            price: "",
+        },
+    });
+
     const imageWidth = (Dimensions.get("window").width / 3 - 20) / 4;
 
     function handleGoBack() {
         goBack();
     }
 
-    function handleCancel() {
-        tabNavigate("MyAds");
-    }
+    async function handleEdit(product: ProductProps) {
+        setIsEditing(true);
 
-    function handleFoward() {
-        stackNavigate("AdPreview");
+        try {
+            const productRequestBody = {
+                name: product.name,
+                description: product.description,
+                is_new: product.is_new === "Produto novo" ? true : false,
+                price: Math.floor(Number(product.price) * 100),
+                accept_trade: product.accept_trade,
+                payment_methods: product.payment_methods,
+            };
+
+            await api.put(`/products/${productId}`, productRequestBody);
+
+            const imagesToUploadToServer = product.productImages.filter(
+                (imageData) => imageData.id === undefined
+            );
+
+            if (imagesToUploadToServer.length) {
+                const productimagesRequestBody = new FormData();
+                productimagesRequestBody.append("product_id", productId);
+
+                imagesToUploadToServer.forEach((imageData) => {
+                    const photoFile = {
+                        name: `${user.name}.${imageData.extension}`.toLowerCase(),
+                        uri: imageData.uri,
+                        type: `${imageData.type}/${imageData.extension}`,
+                    } as any;
+
+                    productimagesRequestBody.append("images", photoFile);
+                });
+
+                await api.post("/products/images", productimagesRequestBody, {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                });
+            }
+            if (imagesToDeleteIds.length) {
+                await api.delete(`/products/images?ids=${JSON.stringify(imagesToDeleteIds)}`);
+            }
+
+            navigate("MyAdDetails", { productId });
+        } catch (error) {
+            const isAppError = error instanceof AppError;
+
+            const title = isAppError
+                ? error.message
+                : "Houve um erro na atualização do produto. Tente novamente mais tarde!";
+
+            toast.show({ title, backgroundColor: "red.500", placement: "top" });
+
+            setIsEditing(false);
+        }
     }
 
     async function selectImage() {
         const selectPhoto = await getPhoto();
 
         if (selectPhoto) {
-            setImages((prev) => Array.from(new Set([...prev, selectPhoto])));
+            const newImage: UploadedImagePros = {
+                uri: selectPhoto.uri,
+                type: String(selectPhoto.type),
+                extension: String(selectPhoto.uri.split(".").pop()),
+                id: undefined,
+            };
+
+            const images = getValues("productImages");
+
+            setValue("productImages", [...images, newImage], { shouldValidate: true });
         }
     }
 
-    function deleteImage(deletedImage: string) {
-        setImages(images.filter((img) => img !== deletedImage));
-    }
-
     function renderImages() {
+        const images = getValues("productImages");
         return images.map((image) => (
             <Box
                 position="relative"
-                key={image}
+                key={image.uri}
             >
                 <Image
                     widthSize={imageWidth}
                     heightSize={imageWidth}
                     alt="ProductImage"
-                    source={{ uri: image }}
+                    source={{ uri: image.uri }}
                     borderRadius="lg"
                 />
                 <Pressable
                     position="absolute"
                     right={1}
                     top={1}
-                    onPress={() => deleteImage(image)}
+                    onPress={() => deleteImage(image.uri)}
                 >
                     <Icon
                         as={AntDesign}
@@ -76,6 +189,76 @@ export function EditAd() {
                 </Pressable>
             </Box>
         ));
+    }
+
+    async function deleteImage(deletedImageUri: string) {
+        const insertedImages = getValues("productImages");
+
+        const deletedImageId = insertedImages.find((img) => img.uri === deletedImageUri)?.id || "";
+        if (deletedImageId) {
+            setImagesToDeleteIds([...imagesToDeleteIds, deletedImageId]);
+        }
+
+        setValue(
+            "productImages",
+            insertedImages.filter((img) => img.uri !== deletedImageUri),
+            { shouldValidate: true }
+        );
+    }
+
+    useFocusEffect(
+        useCallback(() => {
+            loadProduct();
+        }, [])
+    );
+
+    async function loadProduct() {
+        try {
+            const { data } = await api.get(`products/${productId}`);
+
+            setValue("accept_trade", data.accept_trade, { shouldValidate: true });
+            setValue("description", data.description, { shouldValidate: true });
+            setValue("is_new", data.is_new ? "Produto novo" : "Produto usado", {
+                shouldValidate: true,
+            });
+            setValue("name", data.name, { shouldValidate: true });
+            setValue(
+                "payment_methods",
+                data.payment_methods.map((method: { key: string }) => method.key),
+                { shouldValidate: true }
+            );
+            setValue("price", (data.price / 100).toFixed(2), { shouldValidate: true });
+            setValue(
+                "productImages",
+                data.product_images.map((image: { id: string; path: string }) => {
+                    const img = {
+                        uri: `${api.defaults.baseURL}/images/${image.path}`,
+                        type: "image",
+                        extension: image.path.split(".").pop(),
+                        id: image.id,
+                    };
+
+                    return img;
+                }),
+                { shouldValidate: true }
+            );
+
+            setIsLoading(false);
+        } catch (error) {
+            const isAppError = error instanceof AppError;
+
+            const title = isAppError
+                ? error.message
+                : "Houve um erro na obtenção dos dados do produto. Tente novamente mais tarde!";
+
+            toast.show({ title, backgroundColor: "red.500", placement: "top" });
+
+            goBack();
+        }
+    }
+
+    if (isLoading) {
+        return <Loading />;
     }
 
     return (
@@ -100,6 +283,7 @@ export function EditAd() {
                             position="absolute"
                             top={0}
                             left={0}
+                            isDisabled={isEditing}
                         >
                             <Icon
                                 as={Feather}
@@ -128,29 +312,69 @@ export function EditAd() {
                             marginBottom={6}
                         />
 
-                        <HStack space={2}>
+                        <HStack
+                            space={2}
+                            width="100%"
+                        >
                             {renderImages()}
 
-                            <Pressable
-                                width={closestSizeAcceptable(imageWidth)}
-                                height={closestSizeAcceptable(imageWidth)}
-                                justifyContent="center"
-                                alignItems="center"
-                                backgroundColor="gray.500"
-                                borderRadius="md"
-                                display={images.length < 3 ? "flex" : "none"}
-                                onPress={selectImage}
-                            >
-                                <Icon
-                                    as={Feather}
-                                    name="plus"
-                                    color="gray.400"
-                                />
-                            </Pressable>
+                            <Controller
+                                control={control}
+                                name="productImages"
+                                render={() => (
+                                    <Box
+                                        position="relative"
+                                        width="100%"
+                                    >
+                                        <Pressable
+                                            width={closestSizeAcceptable(imageWidth)}
+                                            height={closestSizeAcceptable(imageWidth)}
+                                            justifyContent="center"
+                                            alignItems="center"
+                                            backgroundColor="gray.500"
+                                            borderRadius="md"
+                                            display={
+                                                getValues("productImages").length < 3
+                                                    ? "flex"
+                                                    : "none"
+                                            }
+                                            onPress={selectImage}
+                                        >
+                                            <Icon
+                                                as={Feather}
+                                                name="plus"
+                                                color="gray.400"
+                                            />
+                                        </Pressable>
+
+                                        <HStack
+                                            width={40}
+                                            display={errors.productImages ? "flex" : "none"}
+                                            position="absolute"
+                                            right={10}
+                                            bottom="1/3"
+                                            alignItems="center"
+                                        >
+                                            <Icon
+                                                as={AntDesign}
+                                                name="exclamationcircleo"
+                                                color="red.500"
+                                            />
+
+                                            <Text
+                                                text={errors.productImages?.message || ""}
+                                                color="red.500"
+                                                marginLeft={2}
+                                                textAlign="left"
+                                            />
+                                        </HStack>
+                                    </Box>
+                                )}
+                            />
                         </HStack>
                     </VStack>
 
-                    <VStack marginBottom={8}>
+                    <VStack marginBottom={4}>
                         <Title
                             title="Sobre o produto"
                             fontSize="md"
@@ -158,39 +382,80 @@ export function EditAd() {
                             marginBottom={4}
                         />
 
-                        <Input
-                            placeholder="Título do anúncio"
-                            fontSize="md"
-                            marginBottom={4}
+                        <Controller
+                            control={control}
+                            name="name"
+                            render={({ field: { value, onChange } }) => (
+                                <Input
+                                    placeholder="Título do anúncio"
+                                    onChangeText={onChange}
+                                    value={value}
+                                    fontSize="md"
+                                    errorMessage={errors.name?.message}
+                                />
+                            )}
                         />
 
-                        <TextArea
-                            h={40}
-                            placeholder="Descrição do produto"
-                            autoCompleteType={true}
-                            backgroundColor="gray.700"
-                            borderRadius="lg"
-                            fontSize="md"
-                            marginBottom={4}
+                        <Controller
+                            control={control}
+                            name="description"
+                            render={({ field: { onChange, value } }) => (
+                                <TextArea
+                                    h={40}
+                                    placeholder="Descrição do produto"
+                                    marginBottom={6}
+                                    onChangeText={onChange}
+                                    value={value}
+                                    errorMessage={errors.description?.message}
+                                    isInvalid={!!errors.description?.message}
+                                />
+                            )}
                         />
 
-                        <RadioGroup
-                            name="ProductType"
-                            options={["Produto novo", "Produto usado"]}
+                        <Controller
+                            control={control}
+                            name="is_new"
+                            render={({ field: { onChange, value } }) => (
+                                <RadioGroup
+                                    name="isNew"
+                                    options={["Produto novo", "Produto usado"]}
+                                    onChange={onChange}
+                                    value={value}
+                                />
+                            )}
                         />
                     </VStack>
 
-                    <Box marginBottom={4}>
+                    <Box marginBottom={2}>
                         <Title
                             title="Venda"
                             color="gray.200"
                             fontSize="md"
-                            marginBottom={4}
+                            marginBottom={2}
                         />
 
-                        <Input
-                            placeholder="Valor do produto"
-                            inputType="CURRENCY"
+                        <Controller
+                            control={control}
+                            name="price"
+                            render={({ field: { value, onChange } }) => (
+                                <Input
+                                    placeholder="Valor do produto"
+                                    inputType="CURRENCY"
+                                    keyboardType="numeric"
+                                    onChangeText={(text: any) => {
+                                        if (isNaN(text)) {
+                                            return;
+                                        }
+                                        if (Number(text) < 0) {
+                                            return;
+                                        }
+
+                                        return onChange(text);
+                                    }}
+                                    value={value}
+                                    errorMessage={errors.price?.message}
+                                />
+                            )}
                         />
                     </Box>
 
@@ -201,7 +466,17 @@ export function EditAd() {
                             fontSize="sm"
                         />
 
-                        <Switch />
+                        <Controller
+                            control={control}
+                            name="accept_trade"
+                            render={({ field: { onChange, value } }) => (
+                                <Switch
+                                    onToggle={onChange}
+                                    value={value}
+                                    isChecked={value}
+                                />
+                            )}
+                        />
                     </Box>
 
                     <VStack space={3}>
@@ -211,26 +486,23 @@ export function EditAd() {
                             fontSize="sm"
                         />
 
-                        <CheckBox
-                            label="Boleto"
-                            value="Boleto"
-                        />
-                        <CheckBox
-                            label="Pix"
-                            value="Pix"
-                        />
-                        <CheckBox
-                            label="Dinheiro"
-                            value="Dinheiro"
-                        />
-                        <CheckBox
-                            label="Cartão de Crédito"
-                            value="Cartão de Crédito"
-                        />
-                        <CheckBox
-                            label="Depósito Bancário"
-                            value="Depósito Bancário"
-                            onChange={() => console.log("oi")}
+                        <Controller
+                            control={control}
+                            name="payment_methods"
+                            render={({ field: { onChange, value } }) => (
+                                <CheckBox
+                                    options={[
+                                        { label: "Boleto", value: "boleto" },
+                                        { label: "Pix", value: "pix" },
+                                        { label: "Dinheiro", value: "cash" },
+                                        { label: "Cartão de Crédito", value: "card" },
+                                        { label: "Depósito Bancário", value: "deposit" },
+                                    ]}
+                                    value={value}
+                                    onChange={onChange}
+                                    errorMessage={errors.payment_methods?.message}
+                                />
+                            )}
                         />
                     </VStack>
                 </VStack>
@@ -245,13 +517,15 @@ export function EditAd() {
                         text="Cancelar"
                         buttonType="TERCIARY"
                         flex={1}
-                        onPress={handleCancel}
+                        onPress={handleGoBack}
+                        isDisabled={isEditing}
                     />
                     <Button
-                        text="Avançar"
+                        text="Editar"
                         buttonType="PRIMARY"
                         flex={1}
-                        onPress={handleFoward}
+                        onPress={handleSubmit(handleEdit)}
+                        isLoading={isEditing}
                     />
                 </HStack>
             </ScrollView>
