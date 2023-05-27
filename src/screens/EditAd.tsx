@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { CheckBox } from "@components/CheckBox";
 import { Loading } from "@components/Loading";
 import { TextArea } from "@components/TextArea";
+import { Payment_method } from "@dtos/ProductDTO";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useAuth } from "@hooks/userAuth";
 import { createAdSchema } from "@schemas/createAdSchema";
@@ -33,9 +34,7 @@ type UploadedImagePros = {
     id?: string;
 };
 
-export type Payment_method = "pix" | "card" | "deposit" | "cash" | "boleto";
-
-export type ProductProps = {
+export type ProductFormProps = {
     productImages: UploadedImagePros[];
     name: string;
     description: string;
@@ -65,7 +64,7 @@ export function EditAd() {
         formState: { errors },
         setValue,
         getValues,
-    } = useForm<ProductProps>({
+    } = useForm<ProductFormProps>({
         resolver: yupResolver(createAdSchema),
         defaultValues: {
             productImages: [],
@@ -84,7 +83,7 @@ export function EditAd() {
         goBack();
     }
 
-    async function handleEdit(product: ProductProps) {
+    async function handleEdit(product: ProductFormProps) {
         setIsEditing(true);
 
         try {
@@ -362,7 +361,7 @@ export function EditAd() {
                                             />
 
                                             <Text
-                                                text={errors.productImages?.message || ""}
+                                                text={String(errors.productImages?.message)}
                                                 color="red.500"
                                                 marginLeft={2}
                                                 textAlign="left"

@@ -6,34 +6,18 @@ import { PaymentMethods } from "@components/PaymentMethods";
 import { Tag } from "@components/Tag";
 import { Text } from "@components/Text";
 import { Title } from "@components/Title";
+import { ProductDTO } from "@dtos/ProductDTO";
 import { AntDesign } from "@expo/vector-icons";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import { AppStackProps, AppTabProps } from "@routes/app.routes";
 import { api } from "@services/api";
 import { AppError } from "@utils/AppError";
 import { Box, HStack, Icon, Pressable, ScrollView, VStack, useToast } from "native-base";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Payment_method } from "./CreateAd";
-
-type ProductProps = {
-    accept_trade: boolean;
-    created_at: string;
-    description: string;
-    id: string;
-    is_active: boolean;
-    is_new: boolean;
-    name: string;
-    payment_methods: { key: Payment_method; name: string }[];
-    price: number;
-    product_images: { id: string; path: string }[];
-    updated_at: string;
-    user: { avatar: string; name: string; tel: string };
-    user_id: string;
-};
 
 export function MyAdDetails() {
-    const [productData, setProductData] = useState<ProductProps>({} as ProductProps);
+    const [productData, setProductData] = useState<ProductDTO>({} as ProductDTO);
     const [isLoadingProduct, setIsLoadingProduct] = useState<boolean>(true);
     const [isDisabling, setIsDisabling] = useState<boolean>(false);
     const [isDeleting, setIsDeleting] = useState<boolean>(false);
@@ -47,7 +31,7 @@ export function MyAdDetails() {
     const tabsNavigation = useNavigation<AppTabProps>();
 
     function handleGoBack() {
-        stackNavigation.goBack();
+        tabsNavigation.navigate("MyAds");
     }
 
     function handleEditAd() {
@@ -118,9 +102,11 @@ export function MyAdDetails() {
         }
     }
 
-    useEffect(() => {
-        loadProductData();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            loadProductData();
+        }, [])
+    );
 
     if (isLoadingProduct) {
         return <Loading />;
@@ -209,7 +195,7 @@ export function MyAdDetails() {
                         </HStack>
 
                         <Tag
-                            text={!productData.is_new ? "NOVO" : "USADO"}
+                            text={productData.is_new ? "NOVO" : "USADO"}
                             maxWidth={16}
                             tagType="SECONDARY"
                             marginTop={6}

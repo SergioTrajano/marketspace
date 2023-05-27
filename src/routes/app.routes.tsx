@@ -11,7 +11,7 @@ import { useAuth } from "@hooks/userAuth";
 
 import { AdDetails } from "@screens/AdDetails";
 import { AdPreview } from "@screens/AdPreview";
-import { CreateAd, NewAdProps } from "@screens/CreateAd";
+import { CreateAd, ProductFormProps } from "@screens/CreateAd";
 import { EditAd } from "@screens/EditAd";
 import { Home } from "@screens/Home";
 import { MyAdDetails } from "@screens/MyAdDetails";
@@ -29,7 +29,7 @@ type StackRoutesProps = {
     AdDetails: {
         productId: string;
     };
-    AdPreview: NewAdProps;
+    AdPreview: ProductFormProps;
     CreateAd: undefined;
     EditAd: {
         productId: string;

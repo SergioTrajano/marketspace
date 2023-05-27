@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CheckBox } from "@components/CheckBox";
 import { TextArea } from "@components/TextArea";
+import { Payment_method } from "@dtos/ProductDTO";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { createAdSchema } from "@schemas/createAdSchema";
 import { closestSizeAcceptable } from "@utils/closestSizeAcceptableInNativeBase";
@@ -26,20 +27,19 @@ type ImagesInfoProps = {
     type: string;
     extension: string;
 };
-type payment_method = "pix" | "card" | "deposit" | "cash" | "boleto";
 
-export type NewAdProps = {
+export type ProductFormProps = {
     productImages: ImagesInfoProps[];
     name: string;
     description: string;
     is_new: "Produto novo" | "Produto usado";
     accept_trade: boolean;
-    payment_methods: payment_method[];
+    payment_methods: Payment_method[];
     price: string;
 };
 
 export function CreateAd() {
-    const { goBack, navigate: stackNavigate } = useNavigation<AppStackProps>();
+    const { navigate: stackNavigate } = useNavigation<AppStackProps>();
     const { navigate: tabNavigate } = useNavigation<AppTabProps>();
 
     const {
@@ -48,7 +48,7 @@ export function CreateAd() {
         formState: { errors },
         setValue,
         getValues,
-    } = useForm<NewAdProps>({
+    } = useForm<ProductFormProps>({
         resolver: yupResolver(createAdSchema),
         defaultValues: {
             productImages: [],
@@ -64,14 +64,14 @@ export function CreateAd() {
     const imageWidth = (Dimensions.get("window").width / 3 - 20) / 4;
 
     function handleGoBack() {
-        goBack();
+        tabNavigate("MyAds");
     }
 
     function handleCancel() {
         tabNavigate("MyAds");
     }
 
-    function handleFoward(newAd: NewAdProps) {
+    function handleFoward(newAd: ProductFormProps) {
         stackNavigate("AdPreview", newAd);
     }
 
