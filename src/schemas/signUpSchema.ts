@@ -15,7 +15,7 @@ export const signUpSchema = yup.object({
         .required("Informe uma senha")
         .matches(
             /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[$*&@#])[0-9a-zA-Z$*&@#]{8,}$/,
-            "Senha deve conter pelo menos: 1 letra maiscula, 1 letra minuscula, 1 algarismo e um dos caracteres $*&@#"
+            "Informe uma senha forte"
         )
         .trim(),
     confirmPassword: yup

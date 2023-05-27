@@ -125,7 +125,7 @@ export function SignUp() {
     return (
         <SafeAreaView>
             <ScrollView
-                py={12}
+                py={8}
                 px={12}
                 backgroundColor={"gray.600"}
                 showsVerticalScrollIndicator={false}
@@ -162,7 +162,7 @@ export function SignUp() {
                             render={() => (
                                 <Pressable
                                     position={"relative"}
-                                    marginBottom={2}
+                                    marginBottom={6}
                                     onPress={handleUserPhotoSelect}
                                     justifyContent="center"
                                 >
@@ -223,7 +223,6 @@ export function SignUp() {
                                     value={value}
                                     onChangeText={onChange}
                                     errorMessage={errors.name?.message}
-                                    isInvalid={!!errors.name?.message}
                                 />
                             )}
                         />
@@ -234,10 +233,10 @@ export function SignUp() {
                             render={({ field: { onChange, value } }) => (
                                 <Input
                                     placeholder="E-mail"
+                                    keyboardType="email-address"
                                     value={value}
                                     onChangeText={onChange}
                                     errorMessage={errors.email?.message}
-                                    isInvalid={!!errors.email?.message}
                                 />
                             )}
                         />
@@ -248,9 +247,9 @@ export function SignUp() {
                             render={({ field: { onChange, value } }) => (
                                 <Input
                                     placeholder={"Telefone"}
+                                    keyboardType="phone-pad"
                                     value={value}
                                     onChangeText={onChange}
-                                    isInvalid={!!errors.tel?.message}
                                     errorMessage={errors.tel?.message}
                                 />
                             )}
@@ -261,12 +260,12 @@ export function SignUp() {
                             name="password"
                             render={({ field: { onChange, value } }) => (
                                 <Input
-                                    placeholder={errors.password?.message || "Senha"}
+                                    width={"100%"}
+                                    placeholder="Senha"
                                     inputType="PASSWORD"
                                     value={value}
                                     onChangeText={onChange}
                                     errorMessage={errors.password?.message}
-                                    isInvalid={!!errors.password?.message}
                                 />
                             )}
                         />
@@ -281,7 +280,6 @@ export function SignUp() {
                                     value={value}
                                     onChangeText={onChange}
                                     errorMessage={errors.confirmPassword?.message}
-                                    isInvalid={!!errors.confirmPassword?.message}
                                 />
                             )}
                         />
@@ -291,14 +289,22 @@ export function SignUp() {
                             text="Criar"
                             buttonType="PRIMARY"
                             width={"100%"}
-                            marginTop={6}
+                            marginTop={4}
                             isLoading={isLoading}
                         />
                     </Center>
 
+                    <Text
+                        text="* Uma senha forte contém pelo menos uma letra maiuscula, uma letra minuscula, um número e um dos simbolos $*&@#"
+                        fontSize="4xs"
+                        width="100%"
+                        color="gray.100"
+                        marginTop={4}
+                    />
+
                     <Center
                         width={"100%"}
-                        marginTop={12}
+                        marginTop={6}
                         marginBottom={24}
                     >
                         <Text
