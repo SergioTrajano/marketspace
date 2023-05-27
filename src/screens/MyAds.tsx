@@ -9,30 +9,17 @@ import { Title } from "@components/Title";
 
 import { Loading } from "@components/Loading";
 import { Text } from "@components/Text";
+import { ProductDTO } from "@dtos/ProductDTO";
 import { useAuth } from "@hooks/userAuth";
 import { AppStackProps } from "@routes/app.routes";
 import { api } from "@services/api";
 import { AppError } from "@utils/AppError";
 import { useCallback, useState } from "react";
-import { Payment_method } from "./CreateAd";
 
-type ProductProps = {
-    accept_trade: boolean;
-    created_at: string;
-    description: string;
-    id: string;
-    is_active: boolean;
-    is_new: boolean;
-    name: string;
-    payment_methods: { key: Payment_method; name: string }[];
-    price: number;
-    product_images: { id: string; path: string }[];
-    updated_at: string;
-    user_id: string;
-};
+type MyProductProps = Omit<ProductDTO, "user">;
 
 export function MyAds() {
-    const [userProducts, setUserProducs] = useState<ProductProps[]>([] as ProductProps[]);
+    const [userProducts, setUserProducs] = useState<MyProductProps[]>([] as MyProductProps[]);
     const [selectedFilter, setSelectedFilter] = useState<string>("Todos");
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -48,7 +35,7 @@ export function MyAds() {
         navigate("MyAdDetails", { productId: id });
     }
 
-    function renderProductCard(product: ProductProps) {
+    function renderProductCard(product: MyProductProps) {
         return (
             <Pressable onPress={() => handleMyAdDetails(product.id)}>
                 <ProductCard
@@ -92,7 +79,6 @@ export function MyAds() {
             setIsLoading(false);
         } catch (error) {
             const isAppError = error instanceof AppError;
-            console.log(error);
 
             const title = isAppError
                 ? error.message
@@ -168,7 +154,7 @@ export function MyAds() {
                 <FlatList
                     data={filterUserproducts()}
                     renderItem={({ item }) => renderProductCard(item)}
-                    keyExtractor={(item: ProductProps) => item.id}
+                    keyExtractor={(item: MyProductProps) => item.id}
                     numColumns={2}
                     showsVerticalScrollIndicator={false}
                     columnWrapperStyle={{ justifyContent: "space-between", marginBottom: 34 }}
