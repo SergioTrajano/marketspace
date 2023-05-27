@@ -1,30 +1,40 @@
 import { Text } from "@components/Text";
 import { Title } from "@components/Title";
-import { Box, HStack, Icon, ScrollView, VStack } from "native-base";
+import { Box, HStack, ScrollView, VStack, useToast } from "native-base";
 
 import { Avatar } from "@components/Avatar";
 import { Button } from "@components/Button";
 import { Tag } from "@components/Tag";
-import { MaterialCommunityIcons, MaterialIcons, Octicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { AppStackProps } from "@routes/app.routes";
 
 import ImagesCarousel from "@components/ImagesCarousel";
+import { PaymentMethods } from "@components/PaymentMethods";
 import { useAuth } from "@hooks/userAuth";
 import { api } from "@services/api";
-import { NewAdProps } from "./CreateAd";
+import { AppError } from "@utils/AppError";
+import { useState } from "react";
+import { ProductFormProps } from "./CreateAd";
 
 export function AdPreview() {
-    const { goBack, navigate } = useNavigation<AppStackProps>();
-    const route = useRoute();
+    const [isLoading, setIsLoading] = useState<boolean>(false);
 
-    const newAd = route.params as NewAdProps;
+    const { goBack, navigate } = useNavigation<AppStackProps>();
+
+    const route = useRoute();
+    const newAd = route.params as ProductFormProps;
+
+    const toast = useToast();
+
     const { user } = useAuth();
 
     function handleGoBack() {
         goBack();
     }
+
     async function handlePublish() {
+        setIsLoading(true);
+
         try {
             const productRequestBody = {
                 name: newAd.name,
@@ -56,87 +66,22 @@ export function AdPreview() {
             });
 
             navigate("MyAdDetails", { productId: data.id });
-        } catch (e) {
-            console.log(e);
+        } catch (error) {
+            const isAppError = error instanceof AppError;
+
+            const title = isAppError
+                ? error.message
+                : "Houve um erro no cadastro do produto. Tente novamente mais tarde!";
+
+            toast.show({ title, backgroundColor: "red.500", placement: "top" });
+
+            setIsLoading(false);
         }
     }
 
-    const paymentMethodsComponents = {
-        card: (
-            <>
-                <Icon
-                    as={Octicons}
-                    name="credit-card"
-                    size="md"
-                />
-                <Text
-                    text="Cartão de Crédito"
-                    color="gray.200"
-                    marginLeft={2}
-                />
-            </>
-        ),
-        pix: (
-            <>
-                <Icon
-                    as={MaterialIcons}
-                    name="qr-code"
-                    size="md"
-                />
-                <Text
-                    text="Pix"
-                    color="gray.200"
-                    marginLeft={2}
-                />
-            </>
-        ),
-        boleto: (
-            <>
-                <Icon
-                    as={MaterialCommunityIcons}
-                    name="barcode-scan"
-                    size="md"
-                />
-                <Text
-                    text="Boleto"
-                    color="gray.200"
-                    marginLeft={2}
-                />
-            </>
-        ),
-        cash: (
-            <>
-                <Icon
-                    as={MaterialIcons}
-                    name="attach-money"
-                    size="md"
-                />
-                <Text
-                    text="Dinheiro"
-                    color="gray.200"
-                    marginLeft={2}
-                />
-            </>
-        ),
-        deposit: (
-            <>
-                <Icon
-                    as={MaterialCommunityIcons}
-                    name="bank-outline"
-                    size="md"
-                />
-                <Text
-                    text="Depósito bancário"
-                    color="gray.200"
-                    marginLeft={2}
-                />
-            </>
-        ),
-    };
-
     return (
         <Box
-            height="100%"
+            minHeight="100%"
             width="100%"
             paddingTop={32}
             paddingBottom={20}
@@ -150,6 +95,7 @@ export function AdPreview() {
                 backgroundColor="blue.500"
                 justifyContent="center"
                 alignItems="center"
+                zIndex={1}
             >
                 <Title
                     title="Pré visualização do anúncio"
@@ -168,7 +114,7 @@ export function AdPreview() {
                 showsVerticalScrollIndicator={false}
                 backgroundColor="gray.600"
             >
-                <ImagesCarousel images={newAd.productImages} />
+                <ImagesCarousel images={newAd.productImages.map((image) => image.uri)} />
 
                 <VStack
                     px={6}
@@ -177,13 +123,14 @@ export function AdPreview() {
                     <HStack alignItems="center">
                         <Avatar
                             source={{ uri: `${api.defaults.baseURL}/images/${user.avatar}` }}
-                            size={6}
-                            borderWidth={"2"}
+                            size={8}
+                            borderWidth={"2px"}
                             borderColor={"blue.500"}
                         />
 
                         <Text
                             text={user.name}
+                            fontSize="md"
                             marginLeft={2}
                         />
                     </HStack>
@@ -248,17 +195,14 @@ export function AdPreview() {
                                 title="Meios de pagamento"
                                 fontSize="sm"
                                 color="gray.200"
+                                marginBottom={2}
                             />
 
                             {newAd.payment_methods.map((method) => (
-                                <HStack
+                                <PaymentMethods
+                                    method={method}
                                     key={method}
-                                    alignContent="center"
-                                    marginTop={2}
-                                    marginBottom={1}
-                                >
-                                    {paymentMethodsComponents[method]}
-                                </HStack>
+                                />
                             ))}
                         </VStack>
                     </VStack>
@@ -275,12 +219,14 @@ export function AdPreview() {
                 bottom={0}
                 left={0}
                 right={0}
+                zIndex={1}
             >
                 <Button
                     text="Voltar e editar"
                     buttonType="TERCIARY"
                     flex={1}
                     onPress={handleGoBack}
+                    isDisabled={isLoading}
                 />
                 <Button
                     text="Publicar"
@@ -288,6 +234,7 @@ export function AdPreview() {
                     icon="tag-outline"
                     flex={1}
                     onPress={handlePublish}
+                    isLoading={isLoading}
                 />
             </HStack>
         </Box>
