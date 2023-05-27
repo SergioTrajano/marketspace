@@ -6,6 +6,7 @@ import { PaymentMethods } from "@components/PaymentMethods";
 import { Tag } from "@components/Tag";
 import { Text } from "@components/Text";
 import { Title } from "@components/Title";
+import { ProductDTO } from "@dtos/ProductDTO";
 import { AntDesign } from "@expo/vector-icons";
 import { useAuth } from "@hooks/userAuth";
 import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
@@ -16,26 +17,9 @@ import { Box, HStack, Icon, Pressable, ScrollView, VStack, useToast } from "nati
 import { useCallback, useState } from "react";
 import { Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Payment_method } from "./CreateAd";
-
-type ProductProps = {
-    accept_trade: boolean;
-    created_at: string;
-    description: string;
-    id: string;
-    is_active: boolean;
-    is_new: boolean;
-    name: string;
-    payment_methods: { key: Payment_method; name: string }[];
-    price: number;
-    product_images: { id: string; path: string }[];
-    updated_at: string;
-    user: { avatar: string; name: string; tel: string };
-    user_id: string;
-};
 
 export function AdDetails() {
-    const [product, setProduct] = useState<ProductProps>({} as ProductProps);
+    const [product, setProduct] = useState<ProductDTO>({} as ProductDTO);
     const [isLoadingProduct, setIsLoadingProduct] = useState<boolean>(true);
 
     const route = useRoute();
