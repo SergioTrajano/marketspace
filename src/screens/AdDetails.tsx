@@ -1,21 +1,49 @@
-import { useNavigation } from "@react-navigation/native";
-import { AppStackProps } from "@routes/app.routes";
-import { Box, HStack, Icon, Pressable, ScrollView, VStack } from "native-base";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { AntDesign, Octicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
-import ImagesCarousel from "@components/ImagesCarousel";
-import { Text } from "@components/Text";
 import { Avatar } from "@components/Avatar";
-import { Tag } from "@components/Tag";
-import { Title } from "@components/Title";
 import { Button } from "@components/Button";
+import ImagesCarousel from "@components/ImagesCarousel";
+import { Loading } from "@components/Loading";
+import { PaymentMethods } from "@components/PaymentMethods";
+import { Tag } from "@components/Tag";
+import { Text } from "@components/Text";
+import { Title } from "@components/Title";
+import { AntDesign } from "@expo/vector-icons";
+import { useAuth } from "@hooks/userAuth";
+import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
+import { AppStackProps } from "@routes/app.routes";
+import { api } from "@services/api";
+import { AppError } from "@utils/AppError";
+import { Box, HStack, Icon, Pressable, ScrollView, VStack, useToast } from "native-base";
+import { useCallback, useState } from "react";
+import { Linking } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Payment_method } from "./CreateAd";
+
+type ProductProps = {
+    accept_trade: boolean;
+    created_at: string;
+    description: string;
+    id: string;
+    is_active: boolean;
+    is_new: boolean;
+    name: string;
+    payment_methods: { key: Payment_method; name: string }[];
+    price: number;
+    product_images: { id: string; path: string }[];
+    updated_at: string;
+    user: { avatar: string; name: string; tel: string };
+    user_id: string;
+};
 
 export function AdDetails() {
-    const images = [
-        "https://github.com/SergioTrajano.png",
-        "https://github.com/SergioTrajano.png",
-        "https://github.com/SergioTrajano.png",
-    ];
+    const [product, setProduct] = useState<ProductProps>({} as ProductProps);
+    const [isLoadingProduct, setIsLoadingProduct] = useState<boolean>(true);
+
+    const route = useRoute();
+    const { productId } = route.params as { productId: string };
+
+    const toast = useToast();
+
+    const { user } = useAuth();
 
     const { goBack } = useNavigation<AppStackProps>();
 
@@ -23,7 +51,44 @@ export function AdDetails() {
         goBack();
     }
 
-    function handleGetInTouch() {}
+    function handleGetInTouch() {
+        Linking.openURL(
+            `https://wa.me/${product.user.tel}?text=${encodeURI(
+                `Olá, ${product.user.name}. Sou ${
+                    user.name.split(" ")[0]
+                }. Vi seu anuncio no Marketspace. Gostaria de comprar o produto *${product.name}*.`
+            )}`
+        );
+    }
+
+    useFocusEffect(
+        useCallback(() => {
+            loadProduct();
+        }, [])
+    );
+
+    async function loadProduct() {
+        try {
+            const { data } = await api.get(`/products/${productId}`);
+
+            setProduct(data);
+            setIsLoadingProduct(false);
+        } catch (error) {
+            const isAppError = error instanceof AppError;
+
+            const title = isAppError
+                ? error.message
+                : "Houve um erro na exclusão. Tente novamente mais tarde!";
+
+            toast.show({ title, backgroundColor: "red.500", placement: "top" });
+
+            goBack();
+        }
+    }
+
+    if (isLoadingProduct) {
+        return <Loading />;
+    }
 
     return (
         <SafeAreaView>
@@ -44,7 +109,11 @@ export function AdDetails() {
                 </Box>
 
                 <Box>
-                    <ImagesCarousel images={images} />
+                    <ImagesCarousel
+                        images={product.product_images.map(
+                            (img) => `${api.defaults.baseURL}/images/${img.path}`
+                        )}
+                    />
 
                     <VStack
                         marginTop={5}
@@ -52,19 +121,22 @@ export function AdDetails() {
                     >
                         <HStack alignItems="center">
                             <Avatar
-                                size={6}
-                                borderWidth={"2"}
+                                source={{
+                                    uri: `${api.defaults.baseURL}/images/${product.user.avatar}`,
+                                }}
+                                size={8}
+                                borderWidth={"2px"}
                                 borderColor={"blue.500"}
                             />
 
                             <Text
-                                text="Sergio Trajano"
+                                text={product.user.name}
                                 marginLeft={2}
                             />
                         </HStack>
 
                         <Tag
-                            text="USADO"
+                            text={product.is_new ? "NOVO" : "USADO"}
                             maxWidth={16}
                             tagType="SECONDARY"
                             marginTop={6}
@@ -76,7 +148,7 @@ export function AdDetails() {
                                 justifyContent="space-between"
                             >
                                 <Title
-                                    title="Luminária pendente"
+                                    title={product.name}
                                     fontSize="xl"
                                 />
 
@@ -88,7 +160,7 @@ export function AdDetails() {
                                         marginRight={1}
                                     />
                                     <Text
-                                        text="45,00"
+                                        text={(product.price / 100).toFixed(2).replace(".", ",")}
                                         fontSize="xl"
                                         fontWeight="bold"
                                         color="blue.500"
@@ -97,7 +169,7 @@ export function AdDetails() {
                             </HStack>
 
                             <Text
-                                text="Cras congue cursus in tortor sagittis placerat nunc, tellus arcu. Vitae ante leo eget maecenas urna mattis cursus. "
+                                text={product.description}
                                 color="gray.200"
                                 marginTop={2}
                             />
@@ -110,7 +182,7 @@ export function AdDetails() {
                                     marginRight={2}
                                 />
                                 <Text
-                                    text="Não"
+                                    text={product.accept_trade ? "Sim" : "Não"}
                                     color="gray.200"
                                 />
                             </HStack>
@@ -125,86 +197,12 @@ export function AdDetails() {
                                     color="gray.200"
                                 />
 
-                                <HStack
-                                    alignContent="center"
-                                    marginTop={2}
-                                    marginBottom={1}
-                                >
-                                    <Icon
-                                        as={Octicons}
-                                        name="credit-card"
-                                        size="md"
+                                {product.payment_methods.map((method) => (
+                                    <PaymentMethods
+                                        method={method.key}
+                                        key={method.key}
                                     />
-                                    <Text
-                                        text="Cartão de Crédito"
-                                        color="gray.200"
-                                        marginLeft={2}
-                                    />
-                                </HStack>
-                                <HStack
-                                    alignContent="center"
-                                    marginTop={2}
-                                    marginBottom={1}
-                                >
-                                    <Icon
-                                        as={MaterialIcons}
-                                        name="qr-code"
-                                        size="md"
-                                    />
-                                    <Text
-                                        text="Pix"
-                                        color="gray.200"
-                                        marginLeft={2}
-                                    />
-                                </HStack>
-                                <HStack
-                                    alignContent="center"
-                                    marginTop={2}
-                                    marginBottom={1}
-                                >
-                                    <Icon
-                                        as={MaterialCommunityIcons}
-                                        name="barcode-scan"
-                                        size="md"
-                                    />
-                                    <Text
-                                        text="Boleto"
-                                        color="gray.200"
-                                        marginLeft={2}
-                                    />
-                                </HStack>
-                                <HStack
-                                    alignContent="center"
-                                    marginTop={2}
-                                    marginBottom={1}
-                                >
-                                    <Icon
-                                        as={MaterialIcons}
-                                        name="attach-money"
-                                        size="md"
-                                    />
-                                    <Text
-                                        text="Dinheiro"
-                                        color="gray.200"
-                                        marginLeft={2}
-                                    />
-                                </HStack>
-                                <HStack
-                                    alignContent="center"
-                                    marginTop={2}
-                                    marginBottom={1}
-                                >
-                                    <Icon
-                                        as={MaterialCommunityIcons}
-                                        name="bank-outline"
-                                        size="md"
-                                    />
-                                    <Text
-                                        text="Depósito bancário"
-                                        color="gray.200"
-                                        marginLeft={2}
-                                    />
-                                </HStack>
+                                ))}
                             </VStack>
                         </VStack>
                     </VStack>
@@ -229,7 +227,7 @@ export function AdDetails() {
                             color="blue.700"
                         />
                         <Text
-                            text="45,00"
+                            text={(product.price / 100).toFixed(2).replace(".", ",")}
                             fontWeight="bold"
                             fontSize="2xl"
                             color="blue.700"
