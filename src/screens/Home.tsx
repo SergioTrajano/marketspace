@@ -26,23 +26,17 @@ import { CheckBox } from "@components/CheckBox";
 import { Loading } from "@components/Loading";
 import { Switch } from "@components/Switch";
 import { TagButton } from "@components/TagButton";
+import { Payment_method, ProductDTO } from "@dtos/ProductDTO";
 import { useAuth } from "@hooks/userAuth";
 import { AppStackProps, AppTabProps } from "@routes/app.routes";
 import { api } from "@services/api";
 import { AppError } from "@utils/AppError";
 import { useCallback, useEffect, useState } from "react";
-import { Payment_method } from "./CreateAd";
 
-type ProductProps = {
-    accept_trade: boolean;
-    id: string;
-    is_new: boolean;
-    name: string;
-    payment_methods: { key: Payment_method; name: string }[];
-    price: number;
-    product_images: { id: string; path: string }[];
-    user: { avatar: string; name: string; tel: string };
-};
+type ProductProps = Omit<
+    ProductDTO,
+    "created_at" | "description" | "is_active" | "updated_at" | "user_id"
+>;
 
 export function Home() {
     const [products, setProducts] = useState<ProductProps[]>([] as ProductProps[]);
