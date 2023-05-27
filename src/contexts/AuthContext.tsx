@@ -1,7 +1,6 @@
 import { UserDTO } from "@dtos/UserDTO";
 import { api } from "@services/api";
 import { authTokenStorage } from "@storages/storageAuthToken";
-import { userStorage } from "@storages/storageUser";
 import { createContext, ReactNode, useEffect, useState } from "react";
 
 type AuthContextProps = {
@@ -37,7 +36,6 @@ export function AuthContextProvider({ children }: ProviderReactNode) {
                     token: data.token,
                     refreshToken: data.refresh_token,
                 });
-                await userStorage.save(data.user);
             }
         } catch (error) {
             throw error;
@@ -55,7 +53,6 @@ export function AuthContextProvider({ children }: ProviderReactNode) {
         setIsLoadingStorageData(true);
 
         try {
-            await userStorage.remove();
             await authTokenStorage.remove();
 
             updateUserAndTokenStates({} as UserDTO, "");
@@ -70,12 +67,14 @@ export function AuthContextProvider({ children }: ProviderReactNode) {
         setIsLoadingStorageData(true);
 
         try {
-            const storageUser = await userStorage.get();
             const storageAuthToken = await authTokenStorage.get();
 
-            if (storageUser.id && storageAuthToken) {
-                updateUserAndTokenStates(storageUser, storageAuthToken.token);
+            if (storageAuthToken) {
                 defineApiHeadersAuthorization(storageAuthToken.token);
+
+                const { data } = await api.get("users/me");
+
+                updateUserAndTokenStates(data, storageAuthToken.token);
             }
         } catch (error) {
             throw error;
